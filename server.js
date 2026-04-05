@@ -108,27 +108,51 @@ function broadcast(msg) {
   clients.forEach(c => { if (c.readyState === 1) c.send(raw); });
 }
 
-function parseStdoutToUiEvents(id, text) {
-  broadcast({ type: 'agentStatus', id, status: 'active' });
-  broadcast({ type: 'agentOutput', id, text });
+// ── Tool name → UI label mapping ─────────────────────────────────────────────
 
-  const lower = text.toLowerCase();
-  let matchedTool = null;
-  if (lower.includes('search') || lower.includes('pesquisa') || lower.includes('procurar')) {
-    matchedTool = { toolId: 'search_1', name: 'Search', status: 'Pesquisando...' };
-  } else if (lower.includes('read') || lower.includes('examine') || lower.includes('explore') || lower.includes('ler')) {
-    matchedTool = { toolId: 'read_1', name: 'Reading', status: 'Lendo arquivos...' };
-  } else if (lower.includes('run') || lower.includes('executar') || lower.includes('cmd')) {
-    matchedTool = { toolId: 'run_1', name: 'Terminal', status: 'Rodando comando...' };
-  } else if (lower.includes('write') || lower.includes('edit') || lower.includes('escrever')) {
-    matchedTool = { toolId: 'write_1', name: 'Writing', status: 'Escrevendo código...' };
-  } else {
-    matchedTool = { toolId: 'think_1', name: 'Thinking', status: 'Pensando...' };
-  }
+const TOOL_UI_MAP = {
+  // Web / search
+  web_search: { name: 'Search',   status: 'Pesquisando...' },
+  search:     { name: 'Search',   status: 'Pesquisando...' },
+  brave:      { name: 'Search',   status: 'Pesquisando...' },
+  perplexity: { name: 'Search',   status: 'Pesquisando...' },
+  // File ops
+  read:       { name: 'Reading',  status: 'Lendo arquivos...' },
+  read_file:  { name: 'Reading',  status: 'Lendo arquivos...' },
+  list_dir:   { name: 'Reading',  status: 'Explorando...' },
+  // Execution
+  exec:       { name: 'Terminal', status: 'Rodando comando...' },
+  bash:       { name: 'Terminal', status: 'Rodando comando...' },
+  run:        { name: 'Terminal', status: 'Rodando comando...' },
+  shell:      { name: 'Terminal', status: 'Rodando comando...' },
+  // Write / edit
+  write:      { name: 'Writing',  status: 'Escrevendo código...' },
+  write_file: { name: 'Writing',  status: 'Escrevendo código...' },
+  edit:       { name: 'Writing',  status: 'Editando...' },
+  patch:      { name: 'Writing',  status: 'Editando...' },
+  // Browser
+  browser:    { name: 'Browser',  status: 'Navegando...' },
+  navigate:   { name: 'Browser',  status: 'Navegando...' },
+  screenshot: { name: 'Browser',  status: 'Capturando tela...' },
+};
 
-  if (matchedTool) {
-    broadcast({ type: 'agentToolStart', id, toolId: matchedTool.toolId, status: matchedTool.status, toolName: matchedTool.name });
-    setTimeout(() => broadcast({ type: 'agentToolDone', id, toolId: matchedTool.toolId }), 3000);
+function toolUiFor(toolName) {
+  const key = (toolName ?? '').toLowerCase();
+  return TOOL_UI_MAP[key] ?? { name: toolName ?? 'Tool', status: `${toolName ?? 'Tool'}...` };
+}
+
+// ── Real tool event handler (stream: "tool") ─────────────────────────────────
+
+function handleToolEvent(agentId, { phase, name, toolCallId }) {
+  if (!phase || !toolCallId) return;
+  const ui = toolUiFor(name);
+
+  if (phase === 'start') {
+    console.log(`[Tool] start  ${name} (${toolCallId})`);
+    broadcast({ type: 'agentToolStart', id: agentId, toolId: toolCallId, toolName: ui.name, status: ui.status });
+  } else if (phase === 'done' || phase === 'error') {
+    console.log(`[Tool] ${phase}  ${name} (${toolCallId})`);
+    broadcast({ type: 'agentToolDone', id: agentId, toolId: toolCallId });
   }
 }
 
@@ -205,12 +229,23 @@ function connectToOpenClaw() {
 
     // ── agent streaming events ──
     if (msg.type === 'event' && msg.event === 'agent') {
-      const { stream, data: d, done } = msg.payload ?? {};
+      const { stream, data: d } = msg.payload ?? {};
+
       if (stream === 'assistant' && d?.text) {
-        parseStdoutToUiEvents(currentAgentId, d.text);
+        broadcast({ type: 'agentStatus', id: currentAgentId, status: 'active' });
+        broadcast({ type: 'agentOutput', id: currentAgentId, text: d.text });
       }
-      if (done) {
-        broadcast({ type: 'agentStatus', id: currentAgentId, status: 'idle' });
+
+      if (stream === 'tool') {
+        handleToolEvent(currentAgentId, d ?? {});
+      }
+
+      if (stream === 'lifecycle') {
+        if (d?.phase === 'start') {
+          broadcast({ type: 'agentStatus', id: currentAgentId, status: 'active' });
+        } else if (d?.phase === 'end') {
+          broadcast({ type: 'agentStatus', id: currentAgentId, status: 'idle' });
+        }
       }
       return;
     }
