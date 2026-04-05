@@ -125,15 +125,31 @@ function EditActionBar({
   );
 }
 
+export type ChatMessage = { role: 'user' | 'assistant'; text: string; streaming?: boolean };
+
 function App() {
-  const [terminalLines, setTerminalLines] = useState<string[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isTerminalOpen, setIsTerminalOpen] = useState(true);
 
   useEffect(() => {
     const handler = (e: MessageEvent) => {
       const msg = e.data;
-      if (msg && msg.type === 'agentOutput') {
-        setTerminalLines((prev) => [...prev, msg.text]);
+      if (msg?.type === 'agentOutput') {
+        setMessages((prev) => {
+          const last = prev[prev.length - 1];
+          if (last?.role === 'assistant' && last.streaming) {
+            // OpenClaw sends cumulative text per event — replace, don't append
+            return [...prev.slice(0, -1), { ...last, text: msg.text }];
+          }
+          return [...prev, { role: 'assistant', text: msg.text, streaming: true }];
+        });
+      }
+      if (msg?.type === 'agentStatus' && msg.status === 'idle') {
+        setMessages((prev) => {
+          const last = prev[prev.length - 1];
+          if (last?.streaming) return [...prev.slice(0, -1), { ...last, streaming: false }];
+          return prev;
+        });
       }
     };
     window.addEventListener('message', handler);
@@ -141,7 +157,7 @@ function App() {
   }, []);
 
   const handleSendInput = (text: string) => {
-    setTerminalLines((prev) => [...prev, `> ${text}`]);
+    setMessages((prev) => [...prev, { role: 'user', text }]);
     window.postMessage({ type: 'sendInput', text }, '*');
   };
 
@@ -284,10 +300,13 @@ function App() {
     );
   }
 
+  const chatOpen = isTerminalOpen && agents.length > 0 && !isDebugMode;
+  const CHAT_WIDTH = 380;
+
   return (
     <div
       ref={containerRef}
-      style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}
+      style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden', display: 'flex' }}
     >
       <style>{`
         @keyframes pixel-agents-pulse {
@@ -298,154 +317,159 @@ function App() {
         .pixel-agents-migration-btn:hover { filter: brightness(0.8); }
       `}</style>
 
-      <OfficeCanvas
-        officeState={officeState}
-        onClick={handleClick}
-        isEditMode={editor.isEditMode}
-        editorState={editorState}
-        onEditorTileAction={editor.handleEditorTileAction}
-        onEditorEraseAction={editor.handleEditorEraseAction}
-        onEditorSelectionChange={editor.handleEditorSelectionChange}
-        onDeleteSelected={editor.handleDeleteSelected}
-        onRotateSelected={editor.handleRotateSelected}
-        onDragMove={editor.handleDragMove}
-        editorTick={editor.editorTick}
-        zoom={editor.zoom}
-        onZoomChange={editor.handleZoomChange}
-        panRef={editor.panRef}
-      />
+      {/* Game area — shrinks when chat is open */}
+      <div style={{ flex: 1, position: 'relative', overflow: 'hidden', minWidth: 0 }}>
+        <OfficeCanvas
+          officeState={officeState}
+          onClick={handleClick}
+          isEditMode={editor.isEditMode}
+          editorState={editorState}
+          onEditorTileAction={editor.handleEditorTileAction}
+          onEditorEraseAction={editor.handleEditorEraseAction}
+          onEditorSelectionChange={editor.handleEditorSelectionChange}
+          onDeleteSelected={editor.handleDeleteSelected}
+          onRotateSelected={editor.handleRotateSelected}
+          onDragMove={editor.handleDragMove}
+          editorTick={editor.editorTick}
+          zoom={editor.zoom}
+          onZoomChange={editor.handleZoomChange}
+          panRef={editor.panRef}
+        />
 
-      {!isDebugMode && <ZoomControls zoom={editor.zoom} onZoomChange={editor.handleZoomChange} />}
+        {!isDebugMode && <ZoomControls zoom={editor.zoom} onZoomChange={editor.handleZoomChange} />}
 
-      {/* Vignette overlay */}
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          background: 'var(--pixel-vignette)',
-          pointerEvents: 'none',
-          zIndex: 40,
-        }}
-      />
-
-      <BottomToolbar
-        isEditMode={editor.isEditMode}
-        onOpenClaude={editor.handleOpenClaude}
-        onToggleEditMode={editor.handleToggleEditMode}
-        isDebugMode={isDebugMode}
-        onToggleDebugMode={handleToggleDebugMode}
-        alwaysShowOverlay={alwaysShowOverlay}
-        onToggleAlwaysShowOverlay={handleToggleAlwaysShowOverlay}
-        workspaceFolders={workspaceFolders}
-        externalAssetDirectories={externalAssetDirectories}
-        watchAllSessions={watchAllSessions}
-        onToggleWatchAllSessions={() => {
-          const newVal = !watchAllSessions;
-          setWatchAllSessions(newVal);
-          vscode.postMessage({ type: 'setWatchAllSessions', enabled: newVal });
-        }}
-      />
-
-      <VersionIndicator
-        currentVersion={extensionVersion}
-        lastSeenVersion={lastSeenVersion}
-        onDismiss={handleWhatsNewDismiss}
-        onOpenChangelog={handleOpenChangelog}
-      />
-
-      <ChangelogModal
-        isOpen={isChangelogOpen}
-        onClose={() => setIsChangelogOpen(false)}
-        currentVersion={extensionVersion}
-      />
-
-      {editor.isEditMode && editor.isDirty && (
-        <EditActionBar editor={editor} editorState={editorState} />
-      )}
-
-      {showRotateHint && (
+        {/* Vignette overlay */}
         <div
           style={{
             position: 'absolute',
-            top: editor.isDirty ? 52 : 8,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            zIndex: 49,
-            background: 'var(--pixel-hint-bg)',
-            color: '#fff',
-            fontSize: '20px',
-            padding: '3px 8px',
-            borderRadius: 0,
-            border: '2px solid var(--pixel-accent)',
-            boxShadow: 'var(--pixel-shadow)',
+            inset: 0,
+            background: 'var(--pixel-vignette)',
             pointerEvents: 'none',
-            whiteSpace: 'nowrap',
+            zIndex: 40,
           }}
-        >
-          Rotate (R)
-        </div>
-      )}
+        />
 
-      {editor.isEditMode &&
-        (() => {
-          // Compute selected furniture color from current layout
-          const selUid = editorState.selectedFurnitureUid;
-          const selColor = selUid
-            ? (officeState.getLayout().furniture.find((f) => f.uid === selUid)?.color ?? null)
-            : null;
-          return (
-            <EditorToolbar
-              activeTool={editorState.activeTool}
-              selectedTileType={editorState.selectedTileType}
-              selectedFurnitureType={editorState.selectedFurnitureType}
-              selectedFurnitureUid={selUid}
-              selectedFurnitureColor={selColor}
-              floorColor={editorState.floorColor}
-              wallColor={editorState.wallColor}
-              selectedWallSet={editorState.selectedWallSet}
-              onToolChange={editor.handleToolChange}
-              onTileTypeChange={editor.handleTileTypeChange}
-              onFloorColorChange={editor.handleFloorColorChange}
-              onWallColorChange={editor.handleWallColorChange}
-              onWallSetChange={editor.handleWallSetChange}
-              onSelectedFurnitureColorChange={editor.handleSelectedFurnitureColorChange}
-              onFurnitureTypeChange={editor.handleFurnitureTypeChange}
-              loadedAssets={loadedAssets}
-            />
-          );
-        })()}
-
-      {!isDebugMode && (
-        <ToolOverlay
-          officeState={officeState}
-          agents={agents}
-          agentTools={agentTools}
-          subagentCharacters={subagentCharacters}
-          containerRef={containerRef}
-          zoom={editor.zoom}
-          panRef={editor.panRef}
-          onCloseAgent={handleCloseAgent}
+        <BottomToolbar
+          isEditMode={editor.isEditMode}
+          onOpenClaude={editor.handleOpenClaude}
+          onToggleEditMode={editor.handleToggleEditMode}
+          isDebugMode={isDebugMode}
+          onToggleDebugMode={handleToggleDebugMode}
           alwaysShowOverlay={alwaysShowOverlay}
+          onToggleAlwaysShowOverlay={handleToggleAlwaysShowOverlay}
+          workspaceFolders={workspaceFolders}
+          externalAssetDirectories={externalAssetDirectories}
+          watchAllSessions={watchAllSessions}
+          onToggleWatchAllSessions={() => {
+            const newVal = !watchAllSessions;
+            setWatchAllSessions(newVal);
+            vscode.postMessage({ type: 'setWatchAllSessions', enabled: newVal });
+          }}
         />
-      )}
 
-      {isDebugMode && (
-        <DebugView
-          agents={agents}
-          selectedAgent={selectedAgent}
-          agentTools={agentTools}
-          agentStatuses={agentStatuses}
-          subagentTools={subagentTools}
-          onSelectAgent={handleSelectAgent}
+        <VersionIndicator
+          currentVersion={extensionVersion}
+          lastSeenVersion={lastSeenVersion}
+          onDismiss={handleWhatsNewDismiss}
+          onOpenChangelog={handleOpenChangelog}
         />
-      )}
 
-      {isTerminalOpen && agents.length > 0 && !isDebugMode && (
-         <TerminalPanel
-           lines={terminalLines}
-           onSend={handleSendInput}
-           onClose={() => setIsTerminalOpen(false)}
-         />
+        <ChangelogModal
+          isOpen={isChangelogOpen}
+          onClose={() => setIsChangelogOpen(false)}
+          currentVersion={extensionVersion}
+        />
+
+        {editor.isEditMode && editor.isDirty && (
+          <EditActionBar editor={editor} editorState={editorState} />
+        )}
+
+        {showRotateHint && (
+          <div
+            style={{
+              position: 'absolute',
+              top: editor.isDirty ? 52 : 8,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              zIndex: 49,
+              background: 'var(--pixel-hint-bg)',
+              color: '#fff',
+              fontSize: '20px',
+              padding: '3px 8px',
+              borderRadius: 0,
+              border: '2px solid var(--pixel-accent)',
+              boxShadow: 'var(--pixel-shadow)',
+              pointerEvents: 'none',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Rotate (R)
+          </div>
+        )}
+
+        {editor.isEditMode &&
+          (() => {
+            const selUid = editorState.selectedFurnitureUid;
+            const selColor = selUid
+              ? (officeState.getLayout().furniture.find((f) => f.uid === selUid)?.color ?? null)
+              : null;
+            return (
+              <EditorToolbar
+                activeTool={editorState.activeTool}
+                selectedTileType={editorState.selectedTileType}
+                selectedFurnitureType={editorState.selectedFurnitureType}
+                selectedFurnitureUid={selUid}
+                selectedFurnitureColor={selColor}
+                floorColor={editorState.floorColor}
+                wallColor={editorState.wallColor}
+                selectedWallSet={editorState.selectedWallSet}
+                onToolChange={editor.handleToolChange}
+                onTileTypeChange={editor.handleTileTypeChange}
+                onFloorColorChange={editor.handleFloorColorChange}
+                onWallColorChange={editor.handleWallColorChange}
+                onWallSetChange={editor.handleWallSetChange}
+                onSelectedFurnitureColorChange={editor.handleSelectedFurnitureColorChange}
+                onFurnitureTypeChange={editor.handleFurnitureTypeChange}
+                loadedAssets={loadedAssets}
+              />
+            );
+          })()}
+
+        {!isDebugMode && (
+          <ToolOverlay
+            officeState={officeState}
+            agents={agents}
+            agentTools={agentTools}
+            subagentCharacters={subagentCharacters}
+            containerRef={containerRef}
+            zoom={editor.zoom}
+            panRef={editor.panRef}
+            onCloseAgent={handleCloseAgent}
+            alwaysShowOverlay={alwaysShowOverlay}
+          />
+        )}
+
+        {isDebugMode && (
+          <DebugView
+            agents={agents}
+            selectedAgent={selectedAgent}
+            agentTools={agentTools}
+            agentStatuses={agentStatuses}
+            subagentTools={subagentTools}
+            onSelectAgent={handleSelectAgent}
+          />
+        )}
+      </div>
+
+      {/* Chat panel — fixed width sidebar */}
+      {chatOpen && (
+        <div style={{ width: CHAT_WIDTH, flexShrink: 0, position: 'relative' }}>
+          <TerminalPanel
+            messages={messages}
+            onSend={handleSendInput}
+            onClose={() => setIsTerminalOpen(false)}
+          />
+        </div>
       )}
 
       {showMigrationNotice && (
