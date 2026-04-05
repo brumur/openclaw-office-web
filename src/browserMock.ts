@@ -273,12 +273,27 @@ export function dispatchMockMessages(): void {
 
   console.log('[BrowserMock] Messages dispatched');
   
-  // Connect to local backend WS to receive real terminal events
-  const ws = new WebSocket('ws://localhost:3002');
-  ws.onmessage = (event) => {
-    try {
-      const data = JSON.parse(event.data);
-      dispatch(data);
-    } catch(e) {}
-  };
+  if (!(window as any).__pixel_ws_connected) {
+    (window as any).__pixel_ws_connected = true;
+    
+    // Connect to local backend WS to receive real terminal events
+    const ws = new WebSocket('ws://localhost:3002');
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        dispatch(data);
+      } catch(e) {}
+    };
+
+    // Listen for user input on UI and send it to the backend process
+    window.addEventListener('message', (e) => {
+      if (e.data && e.data.type === 'sendInput') {
+         if (ws.readyState === WebSocket.OPEN) {
+           ws.send(JSON.stringify({ type: 'stdin', text: e.data.text }));
+         } else {
+           console.warn('Cannot send input: WebSocket not open.');
+         }
+      }
+    });
+  }
 }

@@ -20,6 +20,8 @@ import { EditTool } from './office/types.js';
 import { isBrowserRuntime } from './runtime.js';
 import { vscode } from './vscodeApi.js';
 
+import { TerminalPanel } from './components/TerminalPanel.js';
+
 // Game state lives outside React — updated imperatively by message handlers
 const officeStateRef = { current: null as OfficeState | null };
 const editorState = new EditorState();
@@ -124,6 +126,25 @@ function EditActionBar({
 }
 
 function App() {
+  const [terminalLines, setTerminalLines] = useState<string[]>([]);
+  const [isTerminalOpen, setIsTerminalOpen] = useState(true);
+
+  useEffect(() => {
+    const handler = (e: MessageEvent) => {
+      const msg = e.data;
+      if (msg && msg.type === 'agentOutput') {
+        setTerminalLines((prev) => [...prev, msg.text]);
+      }
+    };
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, []);
+
+  const handleSendInput = (text: string) => {
+    setTerminalLines((prev) => [...prev, `> ${text}`]);
+    window.postMessage({ type: 'sendInput', text }, '*');
+  };
+
   // Browser runtime (dev or static dist): dispatch mock messages after the
   // useExtensionMessages listener has been registered.
   useEffect(() => {
@@ -417,6 +438,14 @@ function App() {
           subagentTools={subagentTools}
           onSelectAgent={handleSelectAgent}
         />
+      )}
+
+      {isTerminalOpen && agents.length > 0 && !isDebugMode && (
+         <TerminalPanel
+           lines={terminalLines}
+           onSend={handleSendInput}
+           onClose={() => setIsTerminalOpen(false)}
+         />
       )}
 
       {showMigrationNotice && (
