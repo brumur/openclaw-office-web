@@ -76,6 +76,12 @@ wss.on('connection', (ws) => {
   console.log('Browser client connected');
   clients.push(ws);
 
+  // If OpenClaw is already connected, immediately announce the agent to this new client
+  if (openclawReady) {
+    ws.send(JSON.stringify({ type: 'agentCreated', id: currentAgentId, folderName: 'main', resident: true }));
+    ws.send(JSON.stringify({ type: 'agentStatus', id: currentAgentId, status: 'idle' }));
+  }
+
   ws.on('message', (message) => {
     try {
       const data = JSON.parse(message);
