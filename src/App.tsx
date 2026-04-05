@@ -126,6 +126,7 @@ function EditActionBar({
 }
 
 export type ChatMessage = { role: 'user' | 'assistant'; text: string; streaming?: boolean };
+export type WsStatus = 'connecting' | 'connected' | 'disconnected';
 
 const CHAT_STORAGE_KEY = 'pixel-office-chat-history';
 
@@ -142,6 +143,7 @@ function loadStoredMessages(): ChatMessage[] {
 function App() {
   const [messages, setMessages] = useState<ChatMessage[]>(loadStoredMessages);
   const [isTerminalOpen, setIsTerminalOpen] = useState(true);
+  const [wsStatus, setWsStatus] = useState<WsStatus>('connecting');
 
   useEffect(() => {
     if (messages.some((m) => m.streaming)) return; // don't save mid-stream
@@ -162,6 +164,9 @@ function App() {
           }
           return [...prev, { role: 'assistant', text: msg.text, streaming: true }];
         });
+      }
+      if (msg?.type === 'wsConnectionStatus') {
+        setWsStatus(msg.status as WsStatus);
       }
       if (msg?.type === 'agentStatus' && msg.status === 'idle') {
         setMessages((prev) => {
@@ -487,6 +492,7 @@ function App() {
           messages={messages}
           onSend={handleSendInput}
           onClose={() => setIsTerminalOpen(false)}
+          wsStatus={wsStatus}
         />
       )}
 

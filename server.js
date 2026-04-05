@@ -230,6 +230,7 @@ function connectToOpenClaw() {
     // ── agent streaming events ──
     if (msg.type === 'event' && msg.event === 'agent') {
       const { stream, data: d } = msg.payload ?? {};
+      if (stream === 'lifecycle') console.log('[Agent event]', JSON.stringify(msg.payload));
 
       if (stream === 'assistant' && d?.text) {
         broadcast({ type: 'agentStatus', id: currentAgentId, status: 'active' });
@@ -244,6 +245,7 @@ function connectToOpenClaw() {
         if (d?.phase === 'start') {
           broadcast({ type: 'agentStatus', id: currentAgentId, status: 'active' });
         } else if (d?.phase === 'end') {
+          broadcast({ type: 'agentToolsClear', id: currentAgentId });
           broadcast({ type: 'agentStatus', id: currentAgentId, status: 'idle' });
         }
       }

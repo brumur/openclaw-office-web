@@ -1,7 +1,7 @@
 import { marked } from 'marked';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import type { ChatMessage } from '../App.js';
+import type { ChatMessage, WsStatus } from '../App.js';
 
 marked.setOptions({ breaks: true, gfm: true });
 
@@ -9,12 +9,20 @@ interface TerminalPanelProps {
   messages: ChatMessage[];
   onSend: (text: string) => void;
   onClose: () => void;
+  wsStatus: WsStatus;
 }
 
-export function TerminalPanel({ messages, onSend, onClose }: TerminalPanelProps) {
+const STATUS_DOT: Record<WsStatus, { color: string; title: string; pulse: boolean }> = {
+  connected:    { color: '#4ade80', title: 'Conectado',   pulse: false },
+  connecting:   { color: '#facc15', title: 'Conectando…', pulse: true  },
+  disconnected: { color: '#f87171', title: 'Desconectado', pulse: false },
+};
+
+export function TerminalPanel({ messages, onSend, onClose, wsStatus }: TerminalPanelProps) {
   const [input, setInput] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const dot = STATUS_DOT[wsStatus];
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -62,6 +70,18 @@ export function TerminalPanel({ messages, onSend, onClose }: TerminalPanelProps)
           <span style={{ color: 'var(--pixel-accent)', fontSize: 20, fontFamily: 'monospace', fontWeight: 'bold', letterSpacing: 1 }}>
             OpenClaw
           </span>
+          <span
+            title={dot.title}
+            style={{
+              display: 'inline-block',
+              width: 8,
+              height: 8,
+              borderRadius: '50%',
+              background: dot.color,
+              flexShrink: 0,
+              animation: dot.pulse ? 'pixel-agents-pulse 1s ease-in-out infinite' : 'none',
+            }}
+          />
         </div>
         <button
           onClick={onClose}
@@ -91,7 +111,24 @@ export function TerminalPanel({ messages, onSend, onClose }: TerminalPanelProps)
         }}
         onClick={() => inputRef.current?.focus()}
       >
-        {messages.length === 0 && (
+        {wsStatus !== 'connected' && (
+          <div style={{
+            background: wsStatus === 'disconnected' ? 'rgba(248,113,113,0.12)' : 'rgba(250,204,21,0.10)',
+            border: `1px solid ${wsStatus === 'disconnected' ? '#f87171' : '#facc15'}`,
+            color: wsStatus === 'disconnected' ? '#f87171' : '#facc15',
+            fontSize: 14,
+            fontFamily: 'monospace',
+            padding: '8px 12px',
+            borderRadius: 4,
+            textAlign: 'center',
+          }}>
+            {wsStatus === 'disconnected'
+              ? 'Backend offline — reconectando em 5s...'
+              : 'Conectando ao backend...'}
+          </div>
+        )}
+
+        {messages.length === 0 && wsStatus === 'connected' && (
           <div style={{
             color: 'var(--pixel-text-dim)',
             fontSize: 16,
@@ -129,7 +166,8 @@ export function TerminalPanel({ messages, onSend, onClose }: TerminalPanelProps)
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Mensagem..."
+          placeholder={wsStatus === 'connected' ? 'Mensagem...' : 'Aguardando conexão...'}
+          disabled={wsStatus !== 'connected'}
           autoFocus
           style={{
             flex: 1,

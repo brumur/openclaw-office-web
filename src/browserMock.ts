@@ -275,24 +275,46 @@ export function dispatchMockMessages(): void {
   
   if (!(window as any).__pixel_ws_connected) {
     (window as any).__pixel_ws_connected = true;
-    
-    // Connect to local backend WS to receive real terminal events
-    const ws = new WebSocket('ws://localhost:3002');
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        dispatch(data);
-      } catch(e) {}
-    };
+
+    function connectWs() {
+      const ws = new WebSocket('ws://localhost:3002');
+
+      ws.onopen = () => {
+        dispatch({ type: 'wsConnectionStatus', status: 'connected' });
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          dispatch(data);
+        } catch(e) {}
+      };
+
+      ws.onerror = () => {
+        dispatch({ type: 'wsConnectionStatus', status: 'disconnected' });
+      };
+
+      ws.onclose = () => {
+        dispatch({ type: 'wsConnectionStatus', status: 'disconnected' });
+        setTimeout(connectWs, 5000);
+      };
+
+      (window as any).__pixel_ws = ws;
+    }
+
+    // Dispatch connecting status before first attempt
+    dispatch({ type: 'wsConnectionStatus', status: 'connecting' });
+    connectWs();
 
     // Listen for user input on UI and send it to the backend process
     window.addEventListener('message', (e) => {
       if (e.data && e.data.type === 'sendInput') {
-         if (ws.readyState === WebSocket.OPEN) {
-           ws.send(JSON.stringify({ type: 'stdin', text: e.data.text }));
-         } else {
-           console.warn('Cannot send input: WebSocket not open.');
-         }
+        const ws = (window as any).__pixel_ws;
+        if (ws?.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: 'stdin', text: e.data.text }));
+        } else {
+          console.warn('Cannot send input: WebSocket not open.');
+        }
       }
     });
   }
