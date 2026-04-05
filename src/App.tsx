@@ -233,6 +233,7 @@ function App() {
   }, []);
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const canvasAreaRef = useRef<HTMLDivElement>(null);
 
   const [editorTickForKeyboard, setEditorTickForKeyboard] = useState(0);
   useEditorKeyboard(
@@ -318,7 +319,7 @@ function App() {
       `}</style>
 
       {/* Game area — shrinks when chat is open */}
-      <div style={{ flex: 1, position: 'relative', overflow: 'hidden', minWidth: 0 }}>
+      <div ref={canvasAreaRef} style={{ flex: 1, position: 'relative', overflow: 'hidden', minWidth: 0 }}>
         <OfficeCanvas
           officeState={officeState}
           onClick={handleClick}
@@ -441,7 +442,7 @@ function App() {
             agents={agents}
             agentTools={agentTools}
             subagentCharacters={subagentCharacters}
-            containerRef={containerRef}
+            containerRef={canvasAreaRef}
             zoom={editor.zoom}
             panRef={editor.panRef}
             onCloseAgent={handleCloseAgent}
