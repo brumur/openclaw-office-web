@@ -216,7 +216,7 @@ function connectToOpenClaw() {
       console.log(`[OpenClaw] Connected! Server ${v}, protocol ${msg.payload.protocol}`);
 
       // Announce agent to the UI
-      broadcast({ type: 'agentCreated', id: currentAgentId });
+      broadcast({ type: 'agentCreated', id: currentAgentId, folderName: 'main', resident: true });
       broadcast({ type: 'agentStatus', id: currentAgentId, status: 'idle' });
       return;
     }
