@@ -258,6 +258,8 @@ function App() {
     const meta = os.subagentMeta.get(agentId);
     const focusId = meta ? meta.parentAgentId : agentId;
     vscode.postMessage({ type: 'focusAgent', id: focusId });
+    // Reopen chat panel with preserved context
+    setIsTerminalOpen(true);
   }, []);
 
   const officeState = getOfficeState();
