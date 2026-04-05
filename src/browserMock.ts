@@ -249,6 +249,8 @@ export async function initBrowserMock(): Promise<void> {
  */
 export function dispatchMockMessages(): void {
   if (!mockPayload) return;
+  if ((window as any).__pixel_mock_dispatched) return;
+  (window as any).__pixel_mock_dispatched = true;
 
   const { characters, floorSprites, wallSets, furnitureCatalog, furnitureSprites, layout } =
     mockPayload;
