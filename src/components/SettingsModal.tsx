@@ -1,7 +1,6 @@
 import { useState } from 'react';
 
 import { isSoundEnabled, setSoundEnabled } from '../notificationSound.js';
-import { vscode } from '../vscodeApi.js';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -10,9 +9,8 @@ interface SettingsModalProps {
   onToggleDebugMode: () => void;
   alwaysShowOverlay: boolean;
   onToggleAlwaysShowOverlay: () => void;
-  externalAssetDirectories: string[];
-  watchAllSessions: boolean;
-  onToggleWatchAllSessions: () => void;
+  onOpenChat: () => void;
+  onClearHistory: () => void;
 }
 
 const menuItemBase: React.CSSProperties = {
@@ -30,6 +28,29 @@ const menuItemBase: React.CSSProperties = {
   textAlign: 'left',
 };
 
+function Checkbox({ checked }: { checked: boolean }) {
+  return (
+    <span
+      style={{
+        width: 14,
+        height: 14,
+        border: '2px solid rgba(255, 255, 255, 0.5)',
+        borderRadius: 0,
+        background: checked ? 'rgba(90, 140, 255, 0.8)' : 'transparent',
+        flexShrink: 0,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: '12px',
+        lineHeight: 1,
+        color: '#fff',
+      }}
+    >
+      {checked ? '✓' : ''}
+    </span>
+  );
+}
+
 export function SettingsModal({
   isOpen,
   onClose,
@@ -37,31 +58,35 @@ export function SettingsModal({
   onToggleDebugMode,
   alwaysShowOverlay,
   onToggleAlwaysShowOverlay,
-  externalAssetDirectories,
-  watchAllSessions,
-  onToggleWatchAllSessions,
+  onOpenChat,
+  onClearHistory,
 }: SettingsModalProps) {
   const [hovered, setHovered] = useState<string | null>(null);
   const [soundLocal, setSoundLocal] = useState(isSoundEnabled);
+  const [confirmClear, setConfirmClear] = useState(false);
 
   if (!isOpen) return null;
 
+  const item = (key: string) => ({
+    onMouseEnter: () => setHovered(key),
+    onMouseLeave: () => setHovered(null),
+    style: {
+      ...menuItemBase,
+      background: hovered === key ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
+    },
+  });
+
   return (
     <>
-      {/* Dark backdrop — click to close */}
       <div
         onClick={onClose}
         style={{
           position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
+          inset: 0,
           background: 'rgba(0, 0, 0, 0.5)',
           zIndex: 49,
         }}
       />
-      {/* Centered modal */}
       <div
         style={{
           position: 'fixed',
@@ -74,10 +99,10 @@ export function SettingsModal({
           borderRadius: 0,
           padding: '4px',
           boxShadow: 'var(--pixel-shadow)',
-          minWidth: 200,
+          minWidth: 220,
         }}
       >
-        {/* Header with title and X button */}
+        {/* Header */}
         <div
           style={{
             display: 'flex',
@@ -91,8 +116,7 @@ export function SettingsModal({
           <span style={{ fontSize: '24px', color: 'rgba(255, 255, 255, 0.9)' }}>Settings</span>
           <button
             onClick={onClose}
-            onMouseEnter={() => setHovered('close')}
-            onMouseLeave={() => setHovered(null)}
+            {...item('close')}
             style={{
               background: hovered === 'close' ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
               border: 'none',
@@ -104,225 +128,69 @@ export function SettingsModal({
               lineHeight: 1,
             }}
           >
-            X
+            ✕
           </button>
         </div>
-        {/* Menu items */}
+
+        {/* Open Chat */}
         <button
-          onClick={() => {
-            vscode.postMessage({ type: 'openSessionsFolder' });
-            onClose();
-          }}
-          onMouseEnter={() => setHovered('sessions')}
-          onMouseLeave={() => setHovered(null)}
-          style={{
-            ...menuItemBase,
-            background: hovered === 'sessions' ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
-          }}
+          onClick={() => { onOpenChat(); onClose(); }}
+          {...item('chat')}
         >
-          Open Sessions Folder
+          Open Chat
         </button>
-        <button
-          onClick={() => {
-            vscode.postMessage({ type: 'exportLayout' });
-            onClose();
-          }}
-          onMouseEnter={() => setHovered('export')}
-          onMouseLeave={() => setHovered(null)}
-          style={{
-            ...menuItemBase,
-            background: hovered === 'export' ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
-          }}
-        >
-          Export Layout
-        </button>
-        <button
-          onClick={() => {
-            vscode.postMessage({ type: 'importLayout' });
-            onClose();
-          }}
-          onMouseEnter={() => setHovered('import')}
-          onMouseLeave={() => setHovered(null)}
-          style={{
-            ...menuItemBase,
-            background: hovered === 'import' ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
-          }}
-        >
-          Import Layout
-        </button>
-        <button
-          onClick={() => {
-            vscode.postMessage({ type: 'addExternalAssetDirectory' });
-            onClose();
-          }}
-          onMouseEnter={() => setHovered('addAssets')}
-          onMouseLeave={() => setHovered(null)}
-          style={{
-            ...menuItemBase,
-            background: hovered === 'addAssets' ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
-          }}
-        >
-          Add Asset Directory
-        </button>
-        {externalAssetDirectories.map((dir) => (
-          <div
-            key={dir}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '4px 10px',
-              gap: 8,
-            }}
-          >
-            <span
-              style={{
-                fontSize: '18px',
-                color: 'rgba(255, 255, 255, 0.5)',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                maxWidth: 180,
-              }}
-              title={dir}
-            >
-              {dir.split(/[/\\]/).pop() ?? dir}
-            </span>
-            <button
-              onClick={() =>
-                vscode.postMessage({ type: 'removeExternalAssetDirectory', path: dir })
-              }
-              onMouseEnter={() => setHovered(`remove-${dir}`)}
-              onMouseLeave={() => setHovered(null)}
-              style={{
-                background: hovered === `remove-${dir}` ? 'rgba(255, 80, 80, 0.2)' : 'transparent',
-                border: '1px solid rgba(255, 255, 255, 0.2)',
-                borderRadius: 0,
-                color: 'rgba(255, 255, 255, 0.5)',
-                fontSize: '18px',
-                cursor: 'pointer',
-                padding: '1px 6px',
-                flexShrink: 0,
-              }}
-            >
-              X
-            </button>
-          </div>
-        ))}
+
+        <div style={{ height: 1, margin: '4px 0', background: 'var(--pixel-border)' }} />
+
+        {/* Sound */}
         <button
           onClick={() => {
             const newVal = !isSoundEnabled();
             setSoundEnabled(newVal);
             setSoundLocal(newVal);
-            vscode.postMessage({ type: 'setSoundEnabled', enabled: newVal });
           }}
-          onMouseEnter={() => setHovered('sound')}
-          onMouseLeave={() => setHovered(null)}
-          style={{
-            ...menuItemBase,
-            background: hovered === 'sound' ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
-          }}
+          {...item('sound')}
         >
           <span>Sound Notifications</span>
-          <span
-            style={{
-              width: 14,
-              height: 14,
-              border: '2px solid rgba(255, 255, 255, 0.5)',
-              borderRadius: 0,
-              background: soundLocal ? 'rgba(90, 140, 255, 0.8)' : 'transparent',
-              flexShrink: 0,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '12px',
-              lineHeight: 1,
-              color: '#fff',
-            }}
-          >
-            {soundLocal ? 'X' : ''}
-          </span>
+          <Checkbox checked={soundLocal} />
         </button>
-        <button
-          onClick={onToggleWatchAllSessions}
-          onMouseEnter={() => setHovered('watchAll')}
-          onMouseLeave={() => setHovered(null)}
-          style={{
-            ...menuItemBase,
-            background: hovered === 'watchAll' ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
-          }}
-        >
-          <span>Watch All Sessions</span>
-          <span
-            style={{
-              width: 14,
-              height: 14,
-              border: '2px solid rgba(255, 255, 255, 0.5)',
-              borderRadius: 0,
-              background: watchAllSessions ? 'rgba(90, 140, 255, 0.8)' : 'transparent',
-              flexShrink: 0,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '12px',
-              lineHeight: 1,
-              color: '#fff',
-            }}
-          >
-            {watchAllSessions ? 'X' : ''}
-          </span>
-        </button>
-        <button
-          onClick={onToggleAlwaysShowOverlay}
-          onMouseEnter={() => setHovered('overlay')}
-          onMouseLeave={() => setHovered(null)}
-          style={{
-            ...menuItemBase,
-            background: hovered === 'overlay' ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
-          }}
-        >
+
+        {/* Always Show Labels */}
+        <button onClick={onToggleAlwaysShowOverlay} {...item('overlay')}>
           <span>Always Show Labels</span>
-          <span
-            style={{
-              width: 14,
-              height: 14,
-              border: '2px solid rgba(255, 255, 255, 0.5)',
-              borderRadius: 0,
-              background: alwaysShowOverlay ? 'rgba(90, 140, 255, 0.8)' : 'transparent',
-              flexShrink: 0,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '12px',
-              lineHeight: 1,
-              color: '#fff',
-            }}
-          >
-            {alwaysShowOverlay ? 'X' : ''}
-          </span>
+          <Checkbox checked={alwaysShowOverlay} />
         </button>
-        <button
-          onClick={onToggleDebugMode}
-          onMouseEnter={() => setHovered('debug')}
-          onMouseLeave={() => setHovered(null)}
-          style={{
-            ...menuItemBase,
-            background: hovered === 'debug' ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
-          }}
-        >
+
+        {/* Debug View */}
+        <button onClick={onToggleDebugMode} {...item('debug')}>
           <span>Debug View</span>
-          {isDebugMode && (
-            <span
-              style={{
-                width: 6,
-                height: 6,
-                borderRadius: '50%',
-                background: 'rgba(90, 140, 255, 0.8)',
-                flexShrink: 0,
-              }}
-            />
-          )}
+          <Checkbox checked={isDebugMode} />
         </button>
+
+        <div style={{ height: 1, margin: '4px 0', background: 'var(--pixel-border)' }} />
+
+        {/* Clear Chat History */}
+        {!confirmClear ? (
+          <button onClick={() => setConfirmClear(true)} {...item('clear')}>
+            <span style={{ color: 'rgba(255, 120, 120, 0.9)' }}>Clear Chat History</span>
+          </button>
+        ) : (
+          <div style={{ display: 'flex', gap: 4, padding: '4px 10px', alignItems: 'center' }}>
+            <span style={{ fontSize: '20px', color: 'rgba(255,255,255,0.7)', flex: 1 }}>Sure?</span>
+            <button
+              onClick={() => { onClearHistory(); setConfirmClear(false); onClose(); }}
+              style={{ ...menuItemBase, width: 'auto', padding: '2px 10px', fontSize: '20px', background: 'rgba(200, 50, 50, 0.5)', color: '#fff' }}
+            >
+              Yes
+            </button>
+            <button
+              onClick={() => setConfirmClear(false)}
+              style={{ ...menuItemBase, width: 'auto', padding: '2px 10px', fontSize: '20px' }}
+            >
+              No
+            </button>
+          </div>
+        )}
       </div>
     </>
   );

@@ -20,6 +20,7 @@ import { EditTool } from './office/types.js';
 import { isBrowserRuntime } from './runtime.js';
 import { vscode } from './vscodeApi.js';
 
+import { AgentLabels } from './components/AgentLabels.js';
 import { TerminalPanel } from './components/TerminalPanel.js';
 
 // Game state lives outside React — updated imperatively by message handlers
@@ -183,6 +184,11 @@ function App() {
   const handleSendInput = (text: string) => {
     setMessages((prev) => [...prev, { role: 'user', text }]);
     window.postMessage({ type: 'sendInput', text }, '*');
+  };
+
+  const handleClearHistory = () => {
+    setMessages([]);
+    try { localStorage.removeItem(CHAT_STORAGE_KEY); } catch { /* ignore */ }
   };
 
   // Browser runtime (dev or static dist): dispatch mock messages after the
@@ -376,20 +382,13 @@ function App() {
 
         <BottomToolbar
           isEditMode={editor.isEditMode}
-          onOpenClaude={editor.handleOpenClaude}
           onToggleEditMode={editor.handleToggleEditMode}
           isDebugMode={isDebugMode}
           onToggleDebugMode={handleToggleDebugMode}
           alwaysShowOverlay={alwaysShowOverlay}
           onToggleAlwaysShowOverlay={handleToggleAlwaysShowOverlay}
-          workspaceFolders={workspaceFolders}
-          externalAssetDirectories={externalAssetDirectories}
-          watchAllSessions={watchAllSessions}
-          onToggleWatchAllSessions={() => {
-            const newVal = !watchAllSessions;
-            setWatchAllSessions(newVal);
-            vscode.postMessage({ type: 'setWatchAllSessions', enabled: newVal });
-          }}
+          onOpenChat={() => setIsTerminalOpen(true)}
+          onClearHistory={handleClearHistory}
         />
 
         <VersionIndicator
@@ -459,6 +458,18 @@ function App() {
               />
             );
           })()}
+
+        {!isDebugMode && (
+          <AgentLabels
+            officeState={officeState}
+            agents={agents}
+            agentStatuses={agentStatuses}
+            containerRef={containerRef}
+            zoom={editor.zoom}
+            panRef={editor.panRef}
+            subagentCharacters={subagentCharacters}
+          />
+        )}
 
         {!isDebugMode && (
           <ToolOverlay
