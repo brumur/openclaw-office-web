@@ -127,9 +127,28 @@ function EditActionBar({
 
 export type ChatMessage = { role: 'user' | 'assistant'; text: string; streaming?: boolean };
 
+const CHAT_STORAGE_KEY = 'pixel-office-chat-history';
+
+function loadStoredMessages(): ChatMessage[] {
+  try {
+    const raw = localStorage.getItem(CHAT_STORAGE_KEY);
+    if (!raw) return [];
+    return (JSON.parse(raw) as ChatMessage[]).map((m) => ({ ...m, streaming: false }));
+  } catch {
+    return [];
+  }
+}
+
 function App() {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>(loadStoredMessages);
   const [isTerminalOpen, setIsTerminalOpen] = useState(true);
+
+  useEffect(() => {
+    if (messages.some((m) => m.streaming)) return; // don't save mid-stream
+    try {
+      localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messages));
+    } catch { /* quota exceeded, ignore */ }
+  }, [messages]);
 
   useEffect(() => {
     const handler = (e: MessageEvent) => {
@@ -233,7 +252,6 @@ function App() {
   }, []);
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const canvasAreaRef = useRef<HTMLDivElement>(null);
 
   const [editorTickForKeyboard, setEditorTickForKeyboard] = useState(0);
   useEditorKeyboard(
@@ -304,12 +322,11 @@ function App() {
   }
 
   const chatOpen = isTerminalOpen && agents.length > 0 && !isDebugMode;
-  const CHAT_WIDTH = 380;
 
   return (
     <div
       ref={containerRef}
-      style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden', display: 'flex' }}
+      style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}
     >
       <style>{`
         @keyframes pixel-agents-pulse {
@@ -320,8 +337,8 @@ function App() {
         .pixel-agents-migration-btn:hover { filter: brightness(0.8); }
       `}</style>
 
-      {/* Game area — shrinks when chat is open */}
-      <div ref={canvasAreaRef} style={{ flex: 1, position: 'relative', overflow: 'hidden', minWidth: 0 }}>
+      {/* Game area — always full size, chat overlays on top */}
+      <div style={{ position: 'absolute', inset: 0 }}>
         <OfficeCanvas
           officeState={officeState}
           onClick={handleClick}
@@ -444,7 +461,7 @@ function App() {
             agents={agents}
             agentTools={agentTools}
             subagentCharacters={subagentCharacters}
-            containerRef={canvasAreaRef}
+            containerRef={containerRef}
             zoom={editor.zoom}
             panRef={editor.panRef}
             onCloseAgent={handleCloseAgent}
@@ -464,15 +481,13 @@ function App() {
         )}
       </div>
 
-      {/* Chat panel — fixed width sidebar */}
+      {/* Chat panel — overlay on the right, canvas stays full size */}
       {chatOpen && (
-        <div style={{ width: CHAT_WIDTH, flexShrink: 0, position: 'relative' }}>
-          <TerminalPanel
-            messages={messages}
-            onSend={handleSendInput}
-            onClose={() => setIsTerminalOpen(false)}
-          />
-        </div>
+        <TerminalPanel
+          messages={messages}
+          onSend={handleSendInput}
+          onClose={() => setIsTerminalOpen(false)}
+        />
       )}
 
       {showMigrationNotice && (

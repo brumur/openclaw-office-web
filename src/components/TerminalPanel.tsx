@@ -1,6 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { marked } from 'marked';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import type { ChatMessage } from '../App.js';
+
+marked.setOptions({ breaks: true, gfm: true });
 
 interface TerminalPanelProps {
   messages: ChatMessage[];
@@ -184,6 +187,8 @@ function UserBubble({ text }: { text: string }) {
 }
 
 function AssistantBubble({ text, streaming }: { text: string; streaming?: boolean }) {
+  const html = useMemo(() => marked.parse(text) as string, [text]);
+
   return (
     <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
       <div
@@ -214,11 +219,14 @@ function AssistantBubble({ text, streaming }: { text: string; streaming?: boolea
           lineHeight: 1.6,
           borderRadius: '2px 12px 12px 12px',
           wordBreak: 'break-word',
-          whiteSpace: 'pre-wrap',
           boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
         }}
       >
-        {text}
+        <div
+          className="md-content"
+          // eslint-disable-next-line react/no-danger
+          dangerouslySetInnerHTML={{ __html: html }}
+        />
         {streaming && (
           <span
             style={{
