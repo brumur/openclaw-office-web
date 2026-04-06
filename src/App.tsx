@@ -19,6 +19,7 @@ import { isBrowserRuntime } from './runtime.js';
 import { vscode } from './vscodeApi.js';
 
 import { AgentLabels } from './components/AgentLabels.js';
+import { CameraIndicator } from './components/CameraIndicator.js';
 import { LoginScreen } from './components/LoginScreen.js';
 import { TerminalPanel } from './components/TerminalPanel.js';
 
@@ -510,6 +511,8 @@ function App() {
               />
             );
           })()}
+
+        <CameraIndicator status={wsStatus} />
 
         {!isDebugMode && (
           <AgentLabels
