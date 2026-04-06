@@ -19,6 +19,7 @@ import { isBrowserRuntime } from './runtime.js';
 import { vscode } from './vscodeApi.js';
 
 import { AgentLabels } from './components/AgentLabels.js';
+import { LoginScreen } from './components/LoginScreen.js';
 import { TerminalPanel } from './components/TerminalPanel.js';
 
 // Game state lives outside React — updated imperatively by message handlers
@@ -145,6 +146,22 @@ function loadStoredMessages(): Record<number, ChatMessage[]> {
 }
 
 function App() {
+  const [authChecked, setAuthChecked] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/auth/check', { credentials: 'include' })
+      .then((r) => r.json())
+      .then((data) => {
+        setIsAuthenticated(!!data.ok);
+        setAuthChecked(true);
+      })
+      .catch(() => {
+        setIsAuthenticated(false);
+        setAuthChecked(true);
+      });
+  }, []);
+
   const [messagesByAgent, setMessagesByAgent] = useState<Record<number, ChatMessage[]>>(loadStoredMessages);
   const [selectedChatAgentId, setSelectedChatAgentId] = useState<number>(1);
   const [unreadByAgent, setUnreadByAgent] = useState<Record<number, number>>({});
@@ -357,6 +374,9 @@ function App() {
     };
   });
 
+  if (!authChecked) return null; // Brief flash while checking session
+  if (!isAuthenticated) return <LoginScreen onLogin={() => setIsAuthenticated(true)} />;
+
   return (
     // Outer wrapper: flex row so the chat panel pushes the canvas
     <div style={{ display: 'flex', width: '100%', height: '100%', overflow: 'hidden', position: 'relative' }}>
@@ -516,6 +536,10 @@ function App() {
           agentTabs={agentTabs}
           selectedChatAgentId={selectedChatAgentId}
           onSelectAgent={handleSelectChatAgent}
+          onLogout={async () => {
+            await fetch('/api/logout', { method: 'POST', credentials: 'include' });
+            setIsAuthenticated(false);
+          }}
         />
       )}
 

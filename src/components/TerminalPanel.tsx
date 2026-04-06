@@ -21,6 +21,7 @@ interface TerminalPanelProps {
   agentTabs: AgentTab[];
   selectedChatAgentId: number;
   onSelectAgent: (id: number) => void;
+  onLogout?: () => void;
 }
 
 const STATUS_DOT: Record<WsStatus, { color: string; title: string; pulse: boolean }> = {
@@ -37,6 +38,7 @@ export function TerminalPanel({
   agentTabs,
   selectedChatAgentId,
   onSelectAgent,
+  onLogout,
 }: TerminalPanelProps) {
   const [input, setInput] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -134,21 +136,39 @@ export function TerminalPanel({
             }}
           />
         </div>
-        <button
-          onClick={onClose}
-          style={{
-            background: 'transparent',
-            border: '1px solid var(--pixel-border)',
-            color: 'var(--pixel-text-dim)',
-            cursor: 'pointer',
-            fontSize: 14,
-            padding: '2px 8px',
-            fontFamily: 'monospace',
-            flexShrink: 0,
-          }}
-        >
-          ✕
-        </button>
+        <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              title="Sair"
+              style={{
+                background: 'transparent',
+                border: '1px solid var(--pixel-border)',
+                color: 'var(--pixel-text-dim)',
+                cursor: 'pointer',
+                fontSize: 14,
+                padding: '2px 8px',
+                fontFamily: 'monospace',
+              }}
+            >
+              ⏏
+            </button>
+          )}
+          <button
+            onClick={onClose}
+            style={{
+              background: 'transparent',
+              border: '1px solid var(--pixel-border)',
+              color: 'var(--pixel-text-dim)',
+              cursor: 'pointer',
+              fontSize: 14,
+              padding: '2px 8px',
+              fontFamily: 'monospace',
+            }}
+          >
+            ✕
+          </button>
+        </div>
       </div>
 
       {/* Tab bar */}

@@ -2,6 +2,7 @@ import express from 'express';
 import { WebSocketServer, WebSocket } from 'ws';
 import cors from 'cors';
 import crypto from 'crypto';
+import http from 'http';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
@@ -12,6 +13,45 @@ const OPENCLAW_WS_URL = (process.env.OPENCLAW_URL ?? 'http://185.205.244.235:187
 const OPENCLAW_TOKEN  = process.env.OPENCLAW_TOKEN ?? 'admin-token-123';
 const IDENTITY_PATH   = process.env.OPENCLAW_IDENTITY_PATH ?? path.join(os.homedir(), '.pixel-office-identity.json');
 const SCOPES          = ['operator.admin', 'operator.read', 'operator.write', 'operator.approvals'];
+
+// ── Auth / session store ──────────────────────────────────────────────────────
+
+const PIXEL_USER        = process.env.PIXEL_USER ?? 'admin';
+const PIXEL_PASS        = process.env.PIXEL_PASS ?? 'pixel123';
+const SESSION_TTL_MS    = 24 * 60 * 60 * 1000; // 24 h
+
+if (!process.env.PIXEL_USER || !process.env.PIXEL_PASS) {
+  console.warn('[Auth] PIXEL_USER / PIXEL_PASS not set — using default credentials (admin/pixel123). Set them in your environment for security.');
+}
+
+/** token → { createdAt } */
+const sessions = new Map();
+
+function parseCookieToken(cookieHeader) {
+  const match = (cookieHeader ?? '').split(';').map(s => s.trim()).find(s => s.startsWith('pixel_session='));
+  return match ? match.slice('pixel_session='.length) : null;
+}
+
+function isValidSession(cookieHeader) {
+  const token = parseCookieToken(cookieHeader);
+  if (!token) return false;
+  const session = sessions.get(token);
+  if (!session) return false;
+  if (Date.now() - session.createdAt > SESSION_TTL_MS) {
+    sessions.delete(token);
+    return false;
+  }
+  return true;
+}
+
+function authMiddleware(req, res, next) {
+  if (isValidSession(req.headers.cookie)) return next();
+  res.status(401).json({ error: 'Unauthorized' });
+}
+
+function sessionCookie(token) {
+  return `pixel_session=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${SESSION_TTL_MS / 1000}`;
+}
 
 // ── Device identity (Ed25519 key pair, persisted) ─────────────────────────────
 
@@ -64,11 +104,23 @@ function buildDeviceAuthPayloadV3({ deviceId, clientId, clientMode, role, scopes
 // ── Express / WebSocket server (browser-facing) ───────────────────────────────
 
 const app = express();
-app.use(cors());
+app.use(cors({ origin: true, credentials: true }));
+app.use(express.json());
 const port = 3000;
 
-const wss = new WebSocketServer({ port: 3002 });
+const wss = new WebSocketServer({ noServer: true });
 let clients = [];
+
+// Separate HTTP server for WebSocket (port 3002) — validates session cookie on upgrade
+const wsHttpServer = http.createServer();
+wsHttpServer.on('upgrade', (req, socket, head) => {
+  if (!isValidSession(req.headers.cookie)) {
+    socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+    socket.destroy();
+    return;
+  }
+  wss.handleUpgrade(req, socket, head, (ws) => wss.emit('connection', ws, req));
+});
 let currentAgentId = 1;
 
 // ── Resident session definitions ──────────────────────────────────────────────
@@ -364,9 +416,35 @@ connectToOpenClaw();
 
 // ── REST endpoints ────────────────────────────────────────────────────────────
 
+// Auth endpoints (no middleware — they are the gate)
+app.get('/api/auth/check', (req, res) => {
+  res.json({ ok: isValidSession(req.headers.cookie) });
+});
+
+app.post('/api/login', (req, res) => {
+  const { username, password } = req.body ?? {};
+  if (username === PIXEL_USER && password === PIXEL_PASS) {
+    const token = crypto.randomBytes(32).toString('hex');
+    sessions.set(token, { createdAt: Date.now() });
+    res.setHeader('Set-Cookie', sessionCookie(token));
+    console.log(`[Auth] Login: ${username}`);
+    res.json({ ok: true });
+  } else {
+    console.warn(`[Auth] Failed login attempt: ${username}`);
+    res.status(401).json({ error: 'Invalid credentials' });
+  }
+});
+
+app.post('/api/logout', (req, res) => {
+  const token = parseCookieToken(req.headers.cookie);
+  if (token) sessions.delete(token);
+  res.setHeader('Set-Cookie', 'pixel_session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0');
+  res.json({ ok: true });
+});
+
 // Test endpoint: POST /api/test-session?key=lexi&message=hello
 // Sends a chat.send to any sessionKey to trigger the session registry
-app.post('/api/test-session', (req, res) => {
+app.post('/api/test-session', authMiddleware, (req, res) => {
   const sessionKey = req.query.key;
   const message = req.query.message ?? 'olá';
   if (!sessionKey) return res.status(400).json({ error: 'key is required' });
@@ -378,7 +456,7 @@ app.post('/api/test-session', (req, res) => {
   res.json({ ok: true, sessionKey, message });
 });
 
-app.post('/api/spawn-agent', (_req, res) => {
+app.post('/api/spawn-agent', authMiddleware, (_req, res) => {
   const agentId = nextAgentId++;
   currentAgentId = agentId;
   console.log(`Spawning Agent ID: ${agentId}`);
@@ -389,5 +467,8 @@ app.post('/api/spawn-agent', (_req, res) => {
 
 app.listen(port, () => {
   console.log(`Proxy Backend running on http://localhost:${port}`);
+});
+
+wsHttpServer.listen(3002, () => {
   console.log(`WebSocket running on ws://localhost:3002`);
 });
