@@ -89,8 +89,9 @@ v3|{deviceId}|{clientId}|{clientMode}|{role}|{scopes}|{signedAtMs}|{token}|{nonc
 |-------|-------|-----|
 | `protocol mismatch, expectedProtocol: 3` | Used `minProtocol: 1` | Set `minProtocol: 3, maxProtocol: 3` |
 | `cleared scopes` | Connected without device block | Always include `device` block |
-| `PAIRING_REQUIRED` | Device not approved yet | Run `openclaw devices approve <deviceId>` on VPS |
+| `PAIRING_REQUIRED` / `not-paired` | Device not approved yet | Run `openclaw devices approve <deviceId>` on VPS |
 | `missing scope: operator.write` | Wrong scope names | Use all 4 scopes listed above |
+| `ENOTFOUND host.docker.internal` | Linux container could not resolve the special hostname | Point `OPENCLAW_URL` to the reachable host IP, e.g. `http://172.17.0.1:18789` in the validated Jarvis runtime |
 
 ---
 
@@ -190,13 +191,13 @@ These are what `server.js` broadcasts to browser WebSocket clients after transla
 
 | type | payload | description |
 |------|---------|-------------|
-| `agentCreated` | `{ id }` | New agent registered |
+| `agentCreated` | `{ id, name?, sessionKey?, resident? }` | New agent registered |
 | `agentStatus` | `{ id, status: 'idle'\|'active' }` | Agent state change |
 | `agentOutput` | `{ id, text }` | Cumulative assistant text |
 | `agentToolStart` | `{ id, toolId, toolName, status }` | Tool call started |
 | `agentToolDone` | `{ id, toolId }` | Tool call finished |
 | `agentToolsClear` | `{ id }` | Clear all tools (run ended) |
-| `wsConnectionStatus` | `{ status: 'connecting'\|'connected'\|'disconnected' }` | Backend WS health |
+| `wsConnectionStatus` | `{ status: 'connecting'\|'connected'\|'disconnected' }` | Browser-facing bridge health |
 
 ---
 
@@ -219,8 +220,14 @@ Unknown tools fall back to `{ name: toolName, status: "${toolName}..." }`.
 
 ---
 
-## Multi-Session (Pending)
+## Session Routing / Residents
 
-Currently `sessionKey: "main"` is hardcoded and all events route to `agentId = 1`. OpenClaw likely includes a session identifier in agent event payloads.
+The current implementation no longer routes everything to a single hardcoded browser agent.
 
-To investigate, check the `[Agent event]` logs printed by `server.js` when `stream === 'lifecycle'` fires. Look for a field like `sessionKey`, `sessionId`, or `agentId` in the payload. Once confirmed, each unique session key can map to a separate character in the office.
+What happens now:
+- fixed residents exist for `agent:main:main`, `agent:lexi:*`, `agent:dev:*`, `agent:infra:*`
+- `agent:main:subagent:*` still creates a new anonymous character
+- non-resident sessions create dynamic characters on demand
+- residents are announced immediately to the browser, even before the OpenClaw bridge reaches `hello-ok`
+
+This solved a practical UI issue where the office could render empty just because the OpenClaw bridge was still connecting.

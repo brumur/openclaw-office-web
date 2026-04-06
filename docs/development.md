@@ -14,7 +14,9 @@ node server.js
 npm run dev
 ```
 
-Open `http://localhost:5173`.
+Open `http://localhost:8090`.
+
+In production/runtime, `server.js` serves both HTTP and `/ws` on port `3000`. On Jarvis, the validated local publish was `7080 -> 3000`.
 
 ---
 
@@ -31,11 +33,13 @@ Override inline or via `.env`:
 OPENCLAW_URL=http://my-vps:18789 OPENCLAW_TOKEN=my-token node server.js
 ```
 
+Runtime note from the Jarvis deploy: in a Linux container, `OPENCLAW_URL=http://host.docker.internal:18789` failed with `ENOTFOUND`. The working value was `http://172.17.0.1:18789`.
+
 ---
 
 ## First-Time Device Pairing
 
-On first run, `server.js` generates a new Ed25519 key pair and saves it to `~/.pixel-office-identity.json`. The device will fail with `PAIRING_REQUIRED` until you approve it on the server.
+On first run, `server.js` generates a new Ed25519 key pair and saves it to `~/.pixel-office-identity.json`. After network connectivity is fixed, the next expected blocker is `PAIRING_REQUIRED` / `not-paired` until you approve the device on the server.
 
 ```bash
 # On your VPS
@@ -45,25 +49,39 @@ openclaw devices approve <id>
 
 The `deviceId` is also printed in the server logs as `[Identity] Generated new device abc123...`.
 
-You only need to do this once per machine. If you delete the identity file, a new device will be created and will need approval again.
+You only need to do this once per machine. If you delete the identity file, or if a redeploy/container rebuild loses it, a new device will be created and will need approval again. In other words: pairing persistence depends on identity persistence.
 
 ---
 
 ## Common Issues
 
-### Port 3002 already in use
+### Port 3000 already in use
 
 ```bash
-lsof -ti:3002 | xargs kill -9
+lsof -ti:3000 | xargs kill -9
 ```
+
+### Frontend tries `/ws` before login
+
+This was a real issue in browser mode. The WebSocket upgrade requires a valid session cookie, so connecting before login caused 401/reconnect noise.
+
+Fix applied in `src/browserMock.ts`:
+- check `/api/auth/check` first
+- only open `/ws` after auth is valid
+- keep UI in `disconnected` while unauthenticated
+
+### Resident characters not appearing while bridge is still connecting
+
+This was another real issue: if the browser connected before the OpenClaw bridge was ready, the office could render empty.
+
+Fix applied in `server.js`:
+- residents are sent immediately on browser WS connect
+- `wsConnectionStatus` is sent independently from resident creation
+- residents are re-announced after `hello-ok`
 
 ### Agent character not appearing
 
-The character appears when `agentCreated` is broadcast. This happens:
-- On successful OpenClaw connection (`hello-ok`)
-- On `/api/spawn-agent` HTTP call
-
-If the character doesn't appear, check the server logs for `[OpenClaw] Connected!`.
+The character appears when `agentCreated` is broadcast. Residents are now sent immediately to each browser client, even while the OpenClaw bridge is still connecting. For non-resident sessions, check the server logs for OpenClaw events and `sessionKey` mapping.
 
 ### Tool bubble stuck on character
 
@@ -93,14 +111,9 @@ return [...prev.slice(0, -1), { ...last, text: last.text + msg.text }];
 npm run build
 ```
 
-Output goes to `dist/`. The frontend is a static SPA — serve it with any HTTP server. The backend (`server.js`) still needs to run separately.
+Output goes to `dist/`. In production, `server.js` already serves the built SPA and `/ws` from the same process/port when `NODE_ENV=production`.
 
-```bash
-# Serve the built frontend
-npx serve dist
-
-# Or with the existing Express server (add static middleware to server.js)
-```
+For the runtime validated on Jarvis, expose host `7080` to app/container `3000`.
 
 ---
 
