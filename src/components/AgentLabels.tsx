@@ -17,6 +17,7 @@ interface AgentLabelsProps {
   panRef: React.RefObject<{ x: number; y: number }>;
   subagentCharacters: SubagentCharacter[];
   selectedChatAgentId?: number;
+  centerOffsetY?: number;
 }
 
 export function AgentLabels({
@@ -28,6 +29,7 @@ export function AgentLabels({
   panRef,
   subagentCharacters,
   selectedChatAgentId,
+  centerOffsetY = 0,
 }: AgentLabelsProps) {
   const [, setTick] = useState(0);
   useEffect(() => {
@@ -51,7 +53,7 @@ export function AgentLabels({
   const mapW = layout.cols * TILE_SIZE * zoom;
   const mapH = layout.rows * TILE_SIZE * zoom;
   const deviceOffsetX = Math.floor((canvasW - mapW) / 2) + Math.round(panRef.current.x);
-  const deviceOffsetY = Math.floor((canvasH - mapH) / 2) + Math.round(panRef.current.y);
+  const deviceOffsetY = Math.floor((canvasH - mapH) / 2) + Math.round(panRef.current.y + centerOffsetY * dpr);
 
   // Build sub-agent label lookup
   const subLabelMap = new Map<number, string>();

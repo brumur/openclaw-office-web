@@ -40,6 +40,8 @@ interface OfficeCanvasProps {
   zoom: number;
   onZoomChange: (zoom: number) => void;
   panRef: React.MutableRefObject<{ x: number; y: number }>;
+  /** CSS pixels to shift the visual center vertically (negative = up). Used on mobile to account for bottom sheet overlay. */
+  centerOffsetY?: number;
 }
 
 export function OfficeCanvas({
@@ -58,6 +60,7 @@ export function OfficeCanvas({
   zoom,
   onZoomChange,
   panRef,
+  centerOffsetY = 0,
 }: OfficeCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -274,7 +277,7 @@ export function OfficeCanvas({
           officeState.getCharacters(),
           zoom,
           panRef.current.x,
-          panRef.current.y,
+          panRef.current.y + centerOffsetY * (window.devicePixelRatio || 1),
           selectionRender,
           editorRender,
           officeState.getLayout().tileColors,

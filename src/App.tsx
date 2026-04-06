@@ -391,6 +391,10 @@ function App() {
 
   const chatOpen = isTerminalOpen && agents.length > 0 && !isDebugMode;
 
+  // On mobile the chat is a fixed overlay — shift the map center upward so it
+  // appears centered in the visible area (above the bottom sheet).
+  const centerOffsetY = isMobile && chatOpen ? -mobileHeight / 2 : 0;
+
   // Build agent tab descriptors for the chat tab bar
   const agentTabs = agents.map((id) => {
     const ch = officeState.characters.get(id);
@@ -435,6 +439,7 @@ function App() {
           zoom={editor.zoom}
           onZoomChange={editor.handleZoomChange}
           panRef={editor.panRef}
+          centerOffsetY={centerOffsetY}
         />
 
         {!isDebugMode && <ZoomControls zoom={editor.zoom} onZoomChange={editor.handleZoomChange} />}
@@ -531,6 +536,7 @@ function App() {
             panRef={editor.panRef}
             subagentCharacters={subagentCharacters}
             selectedChatAgentId={selectedChatAgentId ?? undefined}
+            centerOffsetY={centerOffsetY}
           />
         )}
 
