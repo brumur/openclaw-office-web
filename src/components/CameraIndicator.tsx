@@ -18,7 +18,7 @@ export function CameraIndicator({ status }: CameraIndicatorProps) {
       style={{
         position: 'absolute',
         top: 10,
-        left: 10,
+        right: 10,
         zIndex: 'var(--pixel-controls-z)',
         display: 'flex',
         alignItems: 'center',
