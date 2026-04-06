@@ -120,7 +120,6 @@ export function ToolOverlay({
         // Determine dot color
         const tools = agentTools[id];
         const hasPermission = subHasPermission || tools?.some((t) => t.permissionWait && !t.done);
-        const hasActiveTools = tools?.some((t) => !t.done);
         const isActive = ch.isActive;
 
         // Hide bubble when idle and not interacted with
@@ -131,7 +130,7 @@ export function ToolOverlay({
         let dotColor: string | null = null;
         if (hasPermission) {
           dotColor = '#facc15';
-        } else if (isActive && hasActiveTools) {
+        } else if (isActive) {
           dotColor = color;
         }
 
