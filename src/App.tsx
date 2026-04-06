@@ -167,6 +167,7 @@ function App() {
   const [selectedChatAgentId, setSelectedChatAgentId] = useState<number | null>(1);
   const [unreadByAgent, setUnreadByAgent] = useState<Record<number, number>>({});
   const [isTerminalOpen, setIsTerminalOpen] = useState(true);
+  const [chatWidth, setChatWidth] = useState(380);
   const [wsStatus, setWsStatus] = useState<WsStatus>('connecting');
 
   // Keep a ref so the message handler always sees the current selected agent
@@ -455,6 +456,7 @@ function App() {
           onToggleAlwaysShowOverlay={handleToggleAlwaysShowOverlay}
           onOpenChat={() => setIsTerminalOpen(true)}
           onClearHistory={handleClearHistory}
+          unreadCount={chatOpen ? 0 : Object.values(unreadByAgent).reduce((a, b) => a + b, 0)}
         />
 
         {editor.isEditMode && editor.isDirty && (
@@ -567,6 +569,8 @@ function App() {
             await fetch('/api/logout', { method: 'POST', credentials: 'include' });
             setIsAuthenticated(false);
           }}
+          width={chatWidth}
+          onWidthChange={setChatWidth}
         />
       )}
 

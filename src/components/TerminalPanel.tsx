@@ -1,10 +1,18 @@
-import { marked } from 'marked';
+import hljs from 'highlight.js';
+import { marked, Renderer } from 'marked';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { agentColor } from '../agentColors.js';
 import type { ChatMessage, WsStatus } from '../App.js';
 
-marked.setOptions({ breaks: true, gfm: true });
+// Configure marked with highlight.js syntax highlighting
+const renderer = new Renderer();
+renderer.code = ({ text, lang }: { text: string; lang?: string }) => {
+  const language = lang && hljs.getLanguage(lang) ? lang : 'plaintext';
+  const highlighted = hljs.highlight(text, { language }).value;
+  return `<pre style="margin:6px 0;overflow-x:auto;background:rgba(0,0,0,0.35);padding:10px 12px;border-radius:4px"><code class="hljs language-${language}" style="font-family:monospace;font-size:13px;line-height:1.5">${highlighted}</code></pre>`;
+};
+marked.use({ renderer, breaks: true, gfm: true });
 
 export interface AgentTab {
   id: number;
@@ -22,6 +30,8 @@ interface TerminalPanelProps {
   selectedChatAgentId: number | null;
   onSelectAgent: (id: number) => void;
   onLogout?: () => void;
+  width: number;
+  onWidthChange: (w: number) => void;
 }
 
 const STATUS_DOT: Record<WsStatus, { color: string; title: string; pulse: boolean }> = {
@@ -39,6 +49,8 @@ export function TerminalPanel({
   selectedChatAgentId,
   onSelectAgent,
   onLogout,
+  width,
+  onWidthChange,
 }: TerminalPanelProps) {
   const [input, setInput] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -57,7 +69,6 @@ export function TerminalPanel({
     if (trimmed) {
       onSend(trimmed);
       setInput('');
-      // Reset textarea height
       if (inputRef.current) {
         inputRef.current.style.height = 'auto';
       }
@@ -71,10 +82,34 @@ export function TerminalPanel({
     }
   };
 
+  // ── Drag-to-resize handle ──────────────────────────────────────────────────
+  const dragRef = useRef<{ startX: number; startWidth: number } | null>(null);
+
+  const handleDragStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    dragRef.current = { startX: e.clientX, startWidth: width };
+
+    const onMove = (ev: MouseEvent) => {
+      if (!dragRef.current) return;
+      const delta = dragRef.current.startX - ev.clientX;
+      const newWidth = Math.min(700, Math.max(280, dragRef.current.startWidth + delta));
+      onWidthChange(newWidth);
+    };
+
+    const onUp = () => {
+      dragRef.current = null;
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  };
+
   return (
     <div
       style={{
-        width: 380,
+        width,
         height: '100%',
         flexShrink: 0,
         background: 'rgba(10, 10, 18, 0.97)',
@@ -83,8 +118,23 @@ export function TerminalPanel({
         flexDirection: 'column',
         boxShadow: `-4px 0 24px rgba(0,0,0,0.5), inset 1px 0 0 ${activeColor}22`,
         transition: 'border-color 0.2s',
+        position: 'relative',
       }}
     >
+      {/* Drag handle */}
+      <div
+        onMouseDown={handleDragStart}
+        style={{
+          position: 'absolute',
+          left: -4,
+          top: 0,
+          bottom: 0,
+          width: 8,
+          cursor: 'col-resize',
+          zIndex: 10,
+        }}
+      />
+
       {/* Header */}
       <div
         style={{
@@ -98,7 +148,6 @@ export function TerminalPanel({
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-          {/* Colored avatar circle */}
           <div
             style={{
               width: 32,
@@ -403,10 +452,23 @@ function AssistantBubble({
   agentInitial: string;
 }) {
   const html = useMemo(() => marked.parse(text) as string, [text]);
+  const [copied, setCopied] = useState(false);
+  const [hovered, setHovered] = useState(false);
+
+  const handleCopy = () => {
+    void navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  };
 
   return (
-    <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-      {/* Colored avatar with agent initial */}
+    <div
+      style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      {/* Colored avatar */}
       <div
         style={{
           width: 26,
@@ -427,38 +489,63 @@ function AssistantBubble({
       >
         {agentInitial}
       </div>
-      <div
-        style={{
-          background: 'rgba(255,255,255,0.05)',
-          border: `1px solid ${color}33`,
-          color: 'var(--pixel-text)',
-          padding: '8px 12px',
-          maxWidth: 'calc(100% - 38px)',
-          fontSize: 15,
-          fontFamily: 'monospace',
-          lineHeight: 1.6,
-          borderRadius: '2px 12px 12px 12px',
-          wordBreak: 'break-word',
-        }}
-      >
-        <div
-          className="md-content"
-          // eslint-disable-next-line react/no-danger
-          dangerouslySetInnerHTML={{ __html: html }}
-        />
-        {streaming && (
-          <span
+      <div style={{ flex: 1, minWidth: 0, position: 'relative' }}>
+        {/* Copy button */}
+        {hovered && !streaming && (
+          <button
+            onClick={handleCopy}
+            title="Copiar"
             style={{
-              display: 'inline-block',
-              width: 8,
-              height: 14,
-              background: color,
-              marginLeft: 3,
-              verticalAlign: 'middle',
-              animation: 'pixel-agents-pulse 0.8s ease-in-out infinite',
+              position: 'absolute',
+              top: 6,
+              right: 6,
+              background: 'rgba(30,30,46,0.9)',
+              border: `1px solid ${color}44`,
+              color: copied ? '#4ade80' : 'var(--pixel-text-dim)',
+              cursor: 'pointer',
+              fontSize: 11,
+              fontFamily: 'monospace',
+              padding: '2px 6px',
+              borderRadius: 3,
+              zIndex: 1,
+              transition: 'color 0.15s',
             }}
-          />
+          >
+            {copied ? '✓ copiado' : 'copiar'}
+          </button>
         )}
+        <div
+          style={{
+            background: 'rgba(255,255,255,0.05)',
+            border: `1px solid ${color}33`,
+            color: 'var(--pixel-text)',
+            padding: '8px 12px',
+            fontSize: 15,
+            fontFamily: 'monospace',
+            lineHeight: 1.6,
+            borderRadius: '2px 12px 12px 12px',
+            wordBreak: 'break-word',
+          }}
+        >
+          <div
+            className="md-content"
+            // eslint-disable-next-line react/no-danger
+            dangerouslySetInnerHTML={{ __html: html }}
+          />
+          {streaming && (
+            <span
+              style={{
+                display: 'inline-block',
+                width: 8,
+                height: 14,
+                background: color,
+                marginLeft: 3,
+                verticalAlign: 'middle',
+                animation: 'pixel-agents-pulse 0.8s ease-in-out infinite',
+              }}
+            />
+          )}
+        </div>
       </div>
     </div>
   );

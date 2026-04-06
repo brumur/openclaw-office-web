@@ -11,6 +11,7 @@ interface BottomToolbarProps {
   onToggleAlwaysShowOverlay: () => void;
   onOpenChat: () => void;
   onClearHistory: () => void;
+  unreadCount?: number;
 }
 
 const panelStyle: React.CSSProperties = {
@@ -53,6 +54,7 @@ export function BottomToolbar({
   onToggleAlwaysShowOverlay,
   onOpenChat,
   onClearHistory,
+  unreadCount = 0,
 }: BottomToolbarProps) {
   const [hovered, setHovered] = useState<string | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -60,24 +62,51 @@ export function BottomToolbar({
   return (
     <div style={panelStyle}>
       {/* Chat */}
-      <button
-        onClick={onOpenChat}
-        onMouseEnter={() => setHovered('chat')}
-        onMouseLeave={() => setHovered(null)}
-        style={{
-          ...btnBase,
-          padding: '5px 12px',
-          background:
-            hovered === 'chat'
-              ? 'var(--pixel-agent-hover-bg, var(--pixel-btn-hover-bg))'
-              : 'var(--pixel-agent-bg, var(--pixel-accent))',
-          border: '2px solid var(--pixel-agent-border, var(--pixel-accent))',
-          color: 'var(--pixel-agent-text, #fff)',
-        }}
-        title="Open chat"
-      >
-        Chat
-      </button>
+      <div style={{ position: 'relative' }}>
+        <button
+          onClick={onOpenChat}
+          onMouseEnter={() => setHovered('chat')}
+          onMouseLeave={() => setHovered(null)}
+          style={{
+            ...btnBase,
+            padding: '5px 12px',
+            background:
+              hovered === 'chat'
+                ? 'var(--pixel-agent-hover-bg, var(--pixel-btn-hover-bg))'
+                : 'var(--pixel-agent-bg, var(--pixel-accent))',
+            border: '2px solid var(--pixel-agent-border, var(--pixel-accent))',
+            color: 'var(--pixel-agent-text, #fff)',
+          }}
+          title="Open chat"
+        >
+          Chat
+        </button>
+        {unreadCount > 0 && (
+          <span
+            style={{
+              position: 'absolute',
+              top: -6,
+              right: -6,
+              background: '#f87171',
+              color: '#fff',
+              fontSize: 11,
+              fontFamily: 'monospace',
+              fontWeight: 'bold',
+              borderRadius: '50%',
+              minWidth: 18,
+              height: 18,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '0 3px',
+              lineHeight: 1,
+              pointerEvents: 'none',
+            }}
+          >
+            {unreadCount > 99 ? '99+' : unreadCount}
+          </span>
+        )}
+      </div>
 
       {/* Layout editor */}
       <button
