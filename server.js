@@ -105,17 +105,23 @@ function sessionLabel(evtSession) {
 }
 
 // Find the resident that owns a given sessionKey.
-// For non-main workspaces (dev, lexi, infra): any session in that workspace → resident.
-// For main workspace: only exact match (agent:main:main → Jarvis).
+// Rules:
+//   agent:main:main             → Jarvis (exact match only)
+//   agent:main:subagent:<UUID>  → new anonymous character (Jarvis's subagent)
+//   agent:dev:*                 → Dev resident (any session in dev workspace)
+//   agent:lexi:*                → Lexi resident (any session in lexi workspace)
+//   agent:infra:*               → Infra resident (any session in infra workspace)
 function residentForSession(evtSession) {
-  if (isSubagentSession(evtSession)) return null;
   const parts = evtSession.split(':');
   const workspace = parts[1];
   return RESIDENTS.find((r) => {
     const rWorkspace = r.sessionKey.split(':')[1];
     if (workspace !== rWorkspace) return false;
-    if (workspace === 'main') return evtSession === r.sessionKey; // strict for main
-    return true; // any session in dev/lexi/infra workspace → that resident
+    // For main workspace: only exact match routes to Jarvis;
+    // subagents of main (agent:main:subagent:*) get their own new character
+    if (workspace === 'main') return evtSession === r.sessionKey;
+    // For all other workspaces (dev, lexi, infra): any session → resident
+    return true;
   }) ?? null;
 }
 
