@@ -129,51 +129,62 @@ function EditActionBar({
 export type ChatMessage = { role: 'user' | 'assistant'; text: string; streaming?: boolean };
 export type WsStatus = 'connecting' | 'connected' | 'disconnected';
 
-const CHAT_STORAGE_KEY = 'pixel-office-chat-history';
+const CHAT_STORAGE_KEY = 'pixel-office-chat-v2';
 
-function loadStoredMessages(): ChatMessage[] {
+function loadStoredMessages(): Record<number, ChatMessage[]> {
   try {
     const raw = localStorage.getItem(CHAT_STORAGE_KEY);
-    if (!raw) return [];
-    return (JSON.parse(raw) as ChatMessage[]).map((m) => ({ ...m, streaming: false }));
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as Record<string, ChatMessage[]>;
+    const result: Record<number, ChatMessage[]> = {};
+    for (const [k, v] of Object.entries(parsed)) {
+      result[Number(k)] = v.map((m) => ({ ...m, streaming: false }));
+    }
+    return result;
   } catch {
-    return [];
+    return {};
   }
 }
 
 function App() {
-  const [messages, setMessages] = useState<ChatMessage[]>(loadStoredMessages);
+  const [messagesByAgent, setMessagesByAgent] = useState<Record<number, ChatMessage[]>>(loadStoredMessages);
+  const [selectedChatAgentId, setSelectedChatAgentId] = useState<number>(1);
   const [isTerminalOpen, setIsTerminalOpen] = useState(true);
   const [wsStatus, setWsStatus] = useState<WsStatus>('connecting');
 
   useEffect(() => {
-    if (messages.some((m) => m.streaming)) return; // don't save mid-stream
+    const allStreaming = Object.values(messagesByAgent).some((msgs) => msgs.some((m) => m.streaming));
+    if (allStreaming) return; // don't save mid-stream
     try {
-      localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messages));
+      localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messagesByAgent));
     } catch { /* quota exceeded, ignore */ }
-  }, [messages]);
+  }, [messagesByAgent]);
 
   useEffect(() => {
     const handler = (e: MessageEvent) => {
       const msg = e.data;
       if (msg?.type === 'agentOutput') {
-        setMessages((prev) => {
-          const last = prev[prev.length - 1];
-          if (last?.role === 'assistant' && last.streaming) {
+        const agentId: number = msg.id ?? 1;
+        setMessagesByAgent((prev) => {
+          const agentMsgs = prev[agentId] ?? [];
+          const last = agentMsgs[agentMsgs.length - 1];
+          const updated = (last?.role === 'assistant' && last.streaming)
             // OpenClaw sends cumulative text per event — replace, don't append
-            return [...prev.slice(0, -1), { ...last, text: msg.text }];
-          }
-          return [...prev, { role: 'assistant', text: msg.text, streaming: true }];
+            ? [...agentMsgs.slice(0, -1), { ...last, text: msg.text }]
+            : [...agentMsgs, { role: 'assistant' as const, text: msg.text, streaming: true }];
+          return { ...prev, [agentId]: updated };
         });
       }
       if (msg?.type === 'wsConnectionStatus') {
         setWsStatus(msg.status as WsStatus);
       }
       if (msg?.type === 'agentStatus' && msg.status === 'idle') {
-        setMessages((prev) => {
-          const last = prev[prev.length - 1];
-          if (last?.streaming) return [...prev.slice(0, -1), { ...last, streaming: false }];
-          return prev;
+        const agentId: number = msg.id ?? 1;
+        setMessagesByAgent((prev) => {
+          const agentMsgs = prev[agentId] ?? [];
+          const last = agentMsgs[agentMsgs.length - 1];
+          if (!last?.streaming) return prev;
+          return { ...prev, [agentId]: [...agentMsgs.slice(0, -1), { ...last, streaming: false }] };
         });
       }
     };
@@ -182,13 +193,20 @@ function App() {
   }, []);
 
   const handleSendInput = (text: string) => {
-    setMessages((prev) => [...prev, { role: 'user', text }]);
-    window.postMessage({ type: 'sendInput', text }, '*');
+    setMessagesByAgent((prev) => {
+      const agentMsgs = prev[selectedChatAgentId] ?? [];
+      return { ...prev, [selectedChatAgentId]: [...agentMsgs, { role: 'user', text }] };
+    });
+    window.postMessage({ type: 'sendInput', text, agentId: selectedChatAgentId }, '*');
   };
 
   const handleClearHistory = () => {
-    setMessages([]);
-    try { localStorage.removeItem(CHAT_STORAGE_KEY); } catch { /* ignore */ }
+    setMessagesByAgent((prev) => ({ ...prev, [selectedChatAgentId]: [] }));
+    try {
+      const stored = JSON.parse(localStorage.getItem(CHAT_STORAGE_KEY) ?? '{}');
+      delete stored[selectedChatAgentId];
+      localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(stored));
+    } catch { /* ignore */ }
   };
 
   // Browser runtime (dev or static dist): dispatch mock messages after the
@@ -287,6 +305,7 @@ function App() {
     const meta = os.subagentMeta.get(agentId);
     const focusId = meta ? meta.parentAgentId : agentId;
     vscode.postMessage({ type: 'focusAgent', id: focusId });
+    setSelectedChatAgentId(focusId);
     // Reopen chat panel with preserved context
     setIsTerminalOpen(true);
   }, []);
@@ -500,7 +519,7 @@ function App() {
       {/* Chat panel — overlay on the right, canvas stays full size */}
       {chatOpen && (
         <TerminalPanel
-          messages={messages}
+          messages={messagesByAgent[selectedChatAgentId] ?? []}
           onSend={handleSendInput}
           onClose={() => setIsTerminalOpen(false)}
           wsStatus={wsStatus}

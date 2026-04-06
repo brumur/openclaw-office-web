@@ -313,7 +313,7 @@ export function dispatchMockMessages(): void {
       if (e.data && e.data.type === 'sendInput') {
         const ws = (window as any).__pixel_ws;
         if (ws?.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ type: 'stdin', text: e.data.text }));
+          ws.send(JSON.stringify({ type: 'stdin', text: e.data.text, agentId: e.data.agentId }));
         } else {
           console.warn('Cannot send input: WebSocket not open.');
         }

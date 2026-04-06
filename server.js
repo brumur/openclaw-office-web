@@ -69,8 +69,27 @@ const port = 3000;
 
 const wss = new WebSocketServer({ port: 3002 });
 let clients = [];
-let nextAgentId = 1;
+let nextAgentId = 2; // 1 is reserved for the resident 'main' session
 let currentAgentId = 1;
+
+// Session registry: maps sessionKey <-> agentId
+// OpenClaw event sessionKey format: "agent:main:main" for Jarvis, "agent:main:subagent:<UUID>" for subagents
+// chat.send sessionKey format: just "main" (the short name)
+const sessionToAgent = new Map([['main', 1], ['agent:main:main', 1]]);
+const agentToSession = new Map([[1, 'main']]); // short name used for chat.send
+const agentEventSession = new Map([[1, 'agent:main:main']]); // full key from events
+
+function isSubagentSession(sessionKey) {
+  return sessionKey?.includes(':subagent:');
+}
+
+// Extract short session name for chat.send from a full event sessionKey
+// "agent:main:lexi" → "lexi", "agent:main:main" → "main"
+function shortSessionKey(evtSession) {
+  const parts = evtSession.split(':');
+  // format is agent:<workspace>:<sessionName>
+  return parts.length >= 3 ? parts[2] : evtSession;
+}
 
 wss.on('connection', (ws) => {
   console.log('Browser client connected');
@@ -87,18 +106,20 @@ wss.on('connection', (ws) => {
       const data = JSON.parse(message);
       if (data.type === 'stdin') {
         const text = data.text;
-        console.log(`[Chat] Sending: ${text.slice(0, 80)}`);
+        const targetAgentId = data.agentId ?? currentAgentId;
+        const sessionKey = agentToSession.get(targetAgentId) ?? 'main';
+        console.log(`[Chat] agentId=${targetAgentId} session=${sessionKey}: ${text.slice(0, 80)}`);
 
         if (!openclawReady) {
           console.warn('[OpenClaw] Not connected yet — message dropped');
           return;
         }
 
-        broadcast({ type: 'agentStatus', id: currentAgentId, status: 'active' });
+        broadcast({ type: 'agentStatus', id: targetAgentId, status: 'active' });
 
         const id = crypto.randomUUID();
         openclawSend({ type: 'req', id, method: 'chat.send', params: {
-          sessionKey: 'main',
+          sessionKey,
           message: text,
           idempotencyKey: id,
         }});
@@ -235,24 +256,44 @@ function connectToOpenClaw() {
 
     // ── agent streaming events ──
     if (msg.type === 'event' && msg.event === 'agent') {
-      const { stream, data: d } = msg.payload ?? {};
+      const { stream, data: d, sessionKey: evtSession } = msg.payload ?? {};
       if (stream === 'lifecycle') console.log('[Agent event]', JSON.stringify(msg.payload));
 
+      // Resolve agentId from sessionKey in the event, or fall back to currentAgentId
+      let agentId = currentAgentId;
+      if (evtSession) {
+        if (!sessionToAgent.has(evtSession)) {
+          // New session discovered — register a new agent
+          const newId = nextAgentId++;
+          const short = shortSessionKey(evtSession);
+          sessionToAgent.set(evtSession, newId);
+          sessionToAgent.set(short, newId);
+          agentToSession.set(newId, short); // short name for chat.send
+          agentEventSession.set(newId, evtSession);
+          const resident = !isSubagentSession(evtSession);
+          broadcast({ type: 'agentCreated', id: newId, folderName: short, resident });
+          broadcast({ type: 'agentStatus', id: newId, status: 'idle' });
+          console.log(`[Session] New session "${evtSession}" (short: ${short}) → agentId=${newId}`);
+        }
+        agentId = sessionToAgent.get(evtSession);
+        currentAgentId = agentId; // keep currentAgentId in sync for fallback
+      }
+
       if (stream === 'assistant' && d?.text) {
-        broadcast({ type: 'agentStatus', id: currentAgentId, status: 'active' });
-        broadcast({ type: 'agentOutput', id: currentAgentId, text: d.text });
+        broadcast({ type: 'agentStatus', id: agentId, status: 'active' });
+        broadcast({ type: 'agentOutput', id: agentId, text: d.text });
       }
 
       if (stream === 'tool') {
-        handleToolEvent(currentAgentId, d ?? {});
+        handleToolEvent(agentId, d ?? {});
       }
 
       if (stream === 'lifecycle') {
         if (d?.phase === 'start') {
-          broadcast({ type: 'agentStatus', id: currentAgentId, status: 'active' });
+          broadcast({ type: 'agentStatus', id: agentId, status: 'active' });
         } else if (d?.phase === 'end') {
-          broadcast({ type: 'agentToolsClear', id: currentAgentId });
-          broadcast({ type: 'agentStatus', id: currentAgentId, status: 'idle' });
+          broadcast({ type: 'agentToolsClear', id: agentId });
+          broadcast({ type: 'agentStatus', id: agentId, status: 'idle' });
         }
       }
       return;
