@@ -273,7 +273,21 @@ export function dispatchMockMessages(): void {
   if (!(window as any).__pixel_ws_connected) {
     (window as any).__pixel_ws_connected = true;
 
-    function connectWs() {
+    async function connectWs() {
+      // Guard: only open WebSocket after a valid session exists
+      try {
+        const auth = await fetch('/api/auth/check', { credentials: 'include' }).then((r) => r.json());
+        if (!auth?.ok) {
+          dispatch({ type: 'wsConnectionStatus', status: 'disconnected' });
+          setTimeout(() => { void connectWs(); }, 5000);
+          return;
+        }
+      } catch {
+        dispatch({ type: 'wsConnectionStatus', status: 'disconnected' });
+        setTimeout(() => { void connectWs(); }, 5000);
+        return;
+      }
+
       const wsProto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       // In dev, Vite proxies /ws → localhost:3000/ws. In production, same host/port.
       const wsUrl = `${wsProto}//${window.location.host}/ws`;
@@ -296,7 +310,7 @@ export function dispatchMockMessages(): void {
 
       ws.onclose = () => {
         dispatch({ type: 'wsConnectionStatus', status: 'disconnected' });
-        setTimeout(connectWs, 5000);
+        setTimeout(() => { void connectWs(); }, 5000);
       };
 
       (window as any).__pixel_ws = ws;
@@ -304,7 +318,7 @@ export function dispatchMockMessages(): void {
 
     // Dispatch connecting status before first attempt
     dispatch({ type: 'wsConnectionStatus', status: 'connecting' });
-    connectWs();
+    void connectWs();
 
     // Listen for user input on UI and send it to the backend process
     window.addEventListener('message', (e) => {

@@ -130,6 +130,7 @@ httpServer.on('upgrade', (req, socket, head) => {
 
 let clients = [];
 let currentAgentId = 1;
+let bridgeStatus = 'connecting';
 
 // ── Resident session definitions ──────────────────────────────────────────────
 // These always appear in the office, even before any OpenClaw event arrives.
@@ -189,13 +190,9 @@ wss.on('connection', (ws) => {
   console.log('Browser client connected');
   clients.push(ws);
 
-  // If OpenClaw is already connected, immediately announce all residents to this new client
-  if (openclawReady) {
-    for (const r of RESIDENTS) {
-      ws.send(JSON.stringify({ type: 'agentCreated', id: r.id, name: r.name, sessionKey: r.sessionKey, resident: true }));
-      ws.send(JSON.stringify({ type: 'agentStatus', id: r.id, status: 'idle' }));
-    }
-  }
+  // Always announce residents — office should be populated even while bridge reconnects
+  sendResidents(ws);
+  sendBridgeStatus(bridgeStatus, ws);
 
   ws.on('message', (message) => {
     try {
@@ -229,6 +226,30 @@ wss.on('connection', (ws) => {
 function broadcast(msg) {
   const raw = JSON.stringify(msg);
   clients.forEach(c => { if (c.readyState === 1) c.send(raw); });
+}
+
+function sendResidents(target = null) {
+  const payloads = RESIDENTS.flatMap((r) => [
+    { type: 'agentCreated', id: r.id, name: r.name, sessionKey: r.sessionKey, resident: true },
+    { type: 'agentStatus', id: r.id, status: 'idle' },
+  ]);
+  if (target) {
+    for (const msg of payloads) {
+      if (target.readyState === WebSocket.OPEN) target.send(JSON.stringify(msg));
+    }
+    return;
+  }
+  for (const msg of payloads) broadcast(msg);
+}
+
+function sendBridgeStatus(status, target = null) {
+  bridgeStatus = status;
+  const msg = { type: 'wsConnectionStatus', status };
+  if (target) {
+    if (target.readyState === WebSocket.OPEN) target.send(JSON.stringify(msg));
+    return;
+  }
+  broadcast(msg);
 }
 
 // ── Tool name → UI label mapping ─────────────────────────────────────────────
@@ -293,6 +314,7 @@ function openclawSend(obj) {
 
 function connectToOpenClaw() {
   console.log(`[OpenClaw] Connecting to ${OPENCLAW_WS_URL}...`);
+  sendBridgeStatus('connecting');
   openclawWs = new WebSocket(OPENCLAW_WS_URL);
 
   openclawWs.on('message', (data) => {
@@ -335,19 +357,18 @@ function connectToOpenClaw() {
     // ── hello-ok ──
     if (msg.type === 'res' && msg.ok && msg.payload?.type === 'hello-ok') {
       openclawReady = true;
+      sendBridgeStatus('connected');
       const v = msg.payload.server?.version;
       console.log(`[OpenClaw] Connected! Server ${v}, protocol ${msg.payload.protocol}`);
 
-      // Announce all resident agents to the UI
-      for (const r of RESIDENTS) {
-        broadcast({ type: 'agentCreated', id: r.id, name: r.name, sessionKey: r.sessionKey, resident: true });
-        broadcast({ type: 'agentStatus', id: r.id, status: 'idle' });
-      }
+      // Re-announce residents in case clients connected before the bridge was ready
+      sendResidents();
       return;
     }
 
     // ── connect error ──
     if (msg.type === 'res' && !msg.ok && !openclawReady) {
+      sendBridgeStatus('disconnected');
       console.error('[OpenClaw] Connect failed:', msg.error?.message, msg.error?.details);
       return;
     }
@@ -411,11 +432,13 @@ function connectToOpenClaw() {
   openclawWs.on('error', (e) => {
     console.error('[OpenClaw] Error:', e.message);
     openclawReady = false;
+    sendBridgeStatus('disconnected');
   });
 
   openclawWs.on('close', (code, reason) => {
     console.log(`[OpenClaw] Disconnected (${code}) — reconnecting in 5s...`);
     openclawReady = false;
+    sendBridgeStatus('disconnected');
     setTimeout(connectToOpenClaw, 5000);
   });
 }
