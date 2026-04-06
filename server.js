@@ -69,15 +69,29 @@ const port = 3000;
 
 const wss = new WebSocketServer({ port: 3002 });
 let clients = [];
-let nextAgentId = 2; // 1 is reserved for the resident 'main' session
 let currentAgentId = 1;
 
+// ── Resident session definitions ──────────────────────────────────────────────
+// These always appear in the office, even before any OpenClaw event arrives.
+// sessionKey must match the format OpenClaw uses in events (agent:<workspace>:<name>).
+const RESIDENTS = [
+  { id: 1, label: 'main',  sessionKey: 'agent:main:main',   shortKey: 'main'  },
+  { id: 2, label: 'lexi',  sessionKey: 'agent:lexi:lexi',   shortKey: 'lexi'  },
+  { id: 3, label: 'dev',   sessionKey: 'agent:dev:dev',     shortKey: 'dev'   },
+  { id: 4, label: 'infra', sessionKey: 'agent:infra:infra', shortKey: 'infra' },
+];
+
+let nextAgentId = RESIDENTS.length + 1;
+
 // Session registry: maps sessionKey <-> agentId
-// OpenClaw event sessionKey format: "agent:main:main" for Jarvis, "agent:main:subagent:<UUID>" for subagents
-// chat.send sessionKey format: just "main" (the short name)
-const sessionToAgent = new Map([['main', 1], ['agent:main:main', 1]]);
-const agentToSession = new Map([[1, 'main']]); // short name used for chat.send
-const agentEventSession = new Map([[1, 'agent:main:main']]); // full key from events
+const sessionToAgent = new Map();
+const agentToSession = new Map(); // agentId -> shortKey (for chat.send)
+
+for (const r of RESIDENTS) {
+  sessionToAgent.set(r.sessionKey, r.id);
+  sessionToAgent.set(r.shortKey, r.id);
+  agentToSession.set(r.id, r.shortKey);
+}
 
 function isSubagentSession(sessionKey) {
   return sessionKey?.includes(':subagent:');
@@ -95,10 +109,12 @@ wss.on('connection', (ws) => {
   console.log('Browser client connected');
   clients.push(ws);
 
-  // If OpenClaw is already connected, immediately announce the agent to this new client
+  // If OpenClaw is already connected, immediately announce all residents to this new client
   if (openclawReady) {
-    ws.send(JSON.stringify({ type: 'agentCreated', id: currentAgentId, folderName: 'main', resident: true }));
-    ws.send(JSON.stringify({ type: 'agentStatus', id: currentAgentId, status: 'idle' }));
+    for (const r of RESIDENTS) {
+      ws.send(JSON.stringify({ type: 'agentCreated', id: r.id, folderName: r.label, resident: true }));
+      ws.send(JSON.stringify({ type: 'agentStatus', id: r.id, status: 'idle' }));
+    }
   }
 
   ws.on('message', (message) => {
@@ -242,9 +258,11 @@ function connectToOpenClaw() {
       const v = msg.payload.server?.version;
       console.log(`[OpenClaw] Connected! Server ${v}, protocol ${msg.payload.protocol}`);
 
-      // Announce agent to the UI
-      broadcast({ type: 'agentCreated', id: currentAgentId, folderName: 'main', resident: true });
-      broadcast({ type: 'agentStatus', id: currentAgentId, status: 'idle' });
+      // Announce all resident agents to the UI
+      for (const r of RESIDENTS) {
+        broadcast({ type: 'agentCreated', id: r.id, folderName: r.label, resident: true });
+        broadcast({ type: 'agentStatus', id: r.id, status: 'idle' });
+      }
       return;
     }
 
@@ -269,7 +287,6 @@ function connectToOpenClaw() {
           sessionToAgent.set(evtSession, newId);
           sessionToAgent.set(short, newId);
           agentToSession.set(newId, short); // short name for chat.send
-          agentEventSession.set(newId, evtSession);
           const resident = !isSubagentSession(evtSession);
           broadcast({ type: 'agentCreated', id: newId, folderName: short, resident });
           broadcast({ type: 'agentStatus', id: newId, status: 'idle' });
@@ -319,7 +336,21 @@ function connectToOpenClaw() {
 
 connectToOpenClaw();
 
-// ── REST endpoint ─────────────────────────────────────────────────────────────
+// ── REST endpoints ────────────────────────────────────────────────────────────
+
+// Test endpoint: POST /api/test-session?key=lexi&message=hello
+// Sends a chat.send to any sessionKey to trigger the session registry
+app.post('/api/test-session', (req, res) => {
+  const sessionKey = req.query.key;
+  const message = req.query.message ?? 'olá';
+  if (!sessionKey) return res.status(400).json({ error: 'key is required' });
+  if (!openclawReady) return res.status(503).json({ error: 'OpenClaw not connected' });
+
+  const id = crypto.randomUUID();
+  openclawSend({ type: 'req', id, method: 'chat.send', params: { sessionKey, message, idempotencyKey: id } });
+  console.log(`[Test] chat.send → sessionKey=${sessionKey} message="${message}"`);
+  res.json({ ok: true, sessionKey, message });
+});
 
 app.post('/api/spawn-agent', (_req, res) => {
   const agentId = nextAgentId++;
