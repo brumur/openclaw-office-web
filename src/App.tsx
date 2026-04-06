@@ -163,7 +163,7 @@ function App() {
   }, []);
 
   const [messagesByAgent, setMessagesByAgent] = useState<Record<number, ChatMessage[]>>(loadStoredMessages);
-  const [selectedChatAgentId, setSelectedChatAgentId] = useState<number>(1);
+  const [selectedChatAgentId, setSelectedChatAgentId] = useState<number | null>(1);
   const [unreadByAgent, setUnreadByAgent] = useState<Record<number, number>>({});
   const [isTerminalOpen, setIsTerminalOpen] = useState(true);
   const [wsStatus, setWsStatus] = useState<WsStatus>('connecting');
@@ -217,6 +217,7 @@ function App() {
   }, []);
 
   const handleSendInput = (text: string) => {
+    if (selectedChatAgentId === null) return;
     setMessagesByAgent((prev) => {
       const agentMsgs = prev[selectedChatAgentId] ?? [];
       return { ...prev, [selectedChatAgentId]: [...agentMsgs, { role: 'user', text }] };
@@ -225,6 +226,7 @@ function App() {
   };
 
   const handleClearHistory = () => {
+    if (selectedChatAgentId === null) return;
     setMessagesByAgent((prev) => ({ ...prev, [selectedChatAgentId]: [] }));
     try {
       const stored = JSON.parse(localStorage.getItem(CHAT_STORAGE_KEY) ?? '{}');
@@ -311,6 +313,10 @@ function App() {
     setIsTerminalOpen(true);
   }, []);
 
+  const handleDeselectAgent = useCallback(() => {
+    setSelectedChatAgentId(null);
+  }, []);
+
   const handleClick = useCallback((agentId: number) => {
     // If clicked agent is a sub-agent, focus the parent's terminal instead
     const os = getOfficeState();
@@ -394,6 +400,7 @@ function App() {
         <OfficeCanvas
           officeState={officeState}
           onClick={handleClick}
+          onDeselect={handleDeselectAgent}
           isEditMode={editor.isEditMode}
           editorState={editorState}
           onEditorTileAction={editor.handleEditorTileAction}
@@ -529,7 +536,7 @@ function App() {
       {/* Chat panel — flex sibling, pushes canvas to the left */}
       {chatOpen && (
         <TerminalPanel
-          messages={messagesByAgent[selectedChatAgentId] ?? []}
+          messages={selectedChatAgentId !== null ? (messagesByAgent[selectedChatAgentId] ?? []) : []}
           onSend={handleSendInput}
           onClose={() => setIsTerminalOpen(false)}
           wsStatus={wsStatus}

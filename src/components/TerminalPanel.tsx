@@ -19,7 +19,7 @@ interface TerminalPanelProps {
   onClose: () => void;
   wsStatus: WsStatus;
   agentTabs: AgentTab[];
-  selectedChatAgentId: number;
+  selectedChatAgentId: number | null;
   onSelectAgent: (id: number) => void;
   onLogout?: () => void;
 }
@@ -263,27 +263,48 @@ export function TerminalPanel({
           </div>
         )}
 
-        {messages.length === 0 && wsStatus === 'connected' && (
+        {selectedChatAgentId === null ? (
           <div style={{
-            color: 'var(--pixel-text-dim)',
-            fontSize: 16,
-            fontFamily: 'monospace',
-            textAlign: 'center',
-            marginTop: 40,
-            opacity: 0.5,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flex: 1,
+            gap: 10,
+            opacity: 0.45,
+            pointerEvents: 'none',
+            userSelect: 'none',
           }}>
-            Fale com {activeName}...
+            <div style={{ fontSize: 32 }}>🖱️</div>
+            <div style={{ color: 'var(--pixel-text-dim)', fontSize: 16, fontFamily: 'monospace', textAlign: 'center' }}>
+              Clique em um agente<br />para conversar
+            </div>
           </div>
-        )}
+        ) : (
+          <>
+            {messages.length === 0 && wsStatus === 'connected' && (
+              <div style={{
+                color: 'var(--pixel-text-dim)',
+                fontSize: 16,
+                fontFamily: 'monospace',
+                textAlign: 'center',
+                marginTop: 40,
+                opacity: 0.5,
+              }}>
+                Fale com {activeName}...
+              </div>
+            )}
 
-        {messages.map((msg, i) =>
-          msg.role === 'user' ? (
-            <UserBubble key={i} text={msg.text} />
-          ) : (
-            <AssistantBubble key={i} text={msg.text} streaming={msg.streaming} agentColor={activeColor} agentInitial={activeName.charAt(0).toUpperCase()} />
-          )
+            {messages.map((msg, i) =>
+              msg.role === 'user' ? (
+                <UserBubble key={i} text={msg.text} />
+              ) : (
+                <AssistantBubble key={i} text={msg.text} streaming={msg.streaming} agentColor={activeColor} agentInitial={activeName.charAt(0).toUpperCase()} />
+              )
+            )}
+            <div ref={bottomRef} />
+          </>
         )}
-        <div ref={bottomRef} />
       </div>
 
       {/* Input */}
@@ -301,8 +322,8 @@ export function TerminalPanel({
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={wsStatus === 'connected' ? `Mensagem para ${activeName}… (Shift+Enter nova linha)` : 'Aguardando conexão...'}
-          disabled={wsStatus !== 'connected'}
+          placeholder={selectedChatAgentId === null ? 'Selecione um agente no mapa...' : wsStatus === 'connected' ? `Mensagem para ${activeName}… (Shift+Enter nova linha)` : 'Aguardando conexão...'}
+          disabled={wsStatus !== 'connected' || selectedChatAgentId === null}
           autoFocus
           rows={1}
           style={{
