@@ -39,6 +39,10 @@ function getActivityText(
     }
   }
 
+  // Some agents/residents only emit lifecycle/assistant activity and may not
+  // surface nested tool events to this overlay. Still reflect active work.
+  if (isActive) return 'Thinking...';
+
   return 'Idle';
 }
 
@@ -118,13 +122,12 @@ export function ToolOverlay({
         // Determine dot color
         const tools = agentTools[id];
         const hasPermission = subHasPermission || tools?.some((t) => t.permissionWait && !t.done);
-        const hasActiveTools = tools?.some((t) => !t.done);
         const isActive = ch.isActive;
 
         let dotColor: string | null = null;
         if (hasPermission) {
           dotColor = 'var(--pixel-status-permission)';
-        } else if (isActive && hasActiveTools) {
+        } else if (isActive) {
           dotColor = 'var(--pixel-status-active)';
         }
 
