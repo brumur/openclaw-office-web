@@ -87,6 +87,7 @@ export function useExtensionMessages(
   const [loadedAssets, setLoadedAssets] = useState<
     { catalog: FurnitureAsset[]; sprites: Record<string, string[][]> } | undefined
   >();
+  const [, setWorkspaceFolders] = useState<WorkspaceFolder[]>([]);
   const [alwaysShowLabels, setAlwaysShowLabels] = useState(false);
 
   // Track whether initial layout has been loaded (ref to avoid re-render)

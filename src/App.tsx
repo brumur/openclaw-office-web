@@ -503,7 +503,7 @@ function App() {
             zoom={editor.zoom}
             panRef={editor.panRef}
             subagentCharacters={subagentCharacters}
-            selectedChatAgentId={selectedChatAgentId}
+            selectedChatAgentId={selectedChatAgentId ?? undefined}
           />
         )}
 
