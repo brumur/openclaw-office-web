@@ -10,6 +10,8 @@ interface TerminalPanelProps {
   onSend: (text: string) => void;
   onClose: () => void;
   wsStatus: WsStatus;
+  agentName?: string;
+  agentSessionKey?: string;
 }
 
 const STATUS_DOT: Record<WsStatus, { color: string; title: string; pulse: boolean }> = {
@@ -18,22 +20,29 @@ const STATUS_DOT: Record<WsStatus, { color: string; title: string; pulse: boolea
   disconnected: { color: '#f87171', title: 'Desconectado', pulse: false },
 };
 
-export function TerminalPanel({ messages, onSend, onClose, wsStatus }: TerminalPanelProps) {
+export function TerminalPanel({ messages, onSend, onClose, wsStatus, agentName, agentSessionKey }: TerminalPanelProps) {
   const [input, setInput] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const dot = STATUS_DOT[wsStatus];
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = (e?: React.FormEvent) => {
+    e?.preventDefault();
     const trimmed = input.trim();
     if (trimmed) {
       onSend(trimmed);
       setInput('');
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit();
     }
   };
 
@@ -65,11 +74,18 @@ export function TerminalPanel({ messages, onSend, onClose, wsStatus }: TerminalP
           flexShrink: 0,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 18, lineHeight: 1 }}>🦞</span>
-          <span style={{ color: 'var(--pixel-accent)', fontSize: 20, fontFamily: 'monospace', fontWeight: 'bold', letterSpacing: 1 }}>
-            OpenClaw
-          </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+          <span style={{ fontSize: 18, lineHeight: 1, flexShrink: 0 }}>🦞</span>
+          <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+            <span style={{ color: 'var(--pixel-accent)', fontSize: 20, fontFamily: 'monospace', fontWeight: 'bold', letterSpacing: 1, lineHeight: 1.2 }}>
+              {agentName ?? 'OpenClaw'}
+            </span>
+            {agentSessionKey && (
+              <span style={{ color: 'var(--pixel-text-dim)', fontSize: 12, fontFamily: 'monospace', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {agentSessionKey}
+              </span>
+            )}
+          </div>
           <span
             title={dot.title}
             style={{
@@ -152,36 +168,46 @@ export function TerminalPanel({ messages, onSend, onClose, wsStatus }: TerminalP
       </div>
 
       {/* Input */}
-      <form
-        onSubmit={handleSubmit}
+      <div
         style={{
           display: 'flex',
           borderTop: '2px solid var(--pixel-border)',
           background: 'rgba(0,0,0,0.5)',
           flexShrink: 0,
+          alignItems: 'flex-end',
         }}
       >
-        <input
+        <textarea
           ref={inputRef}
-          type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder={wsStatus === 'connected' ? 'Mensagem...' : 'Aguardando conexão...'}
+          onKeyDown={handleKeyDown}
+          placeholder={wsStatus === 'connected' ? 'Mensagem… (Shift+Enter para nova linha)' : 'Aguardando conexão...'}
           disabled={wsStatus !== 'connected'}
           autoFocus
+          rows={1}
           style={{
             flex: 1,
             background: 'transparent',
             border: 'none',
             color: 'var(--pixel-text)',
             outline: 'none',
-            fontSize: 17,
+            fontSize: 16,
             fontFamily: 'monospace',
             padding: '10px 12px',
+            resize: 'none',
+            maxHeight: 120,
+            overflowY: 'auto',
+            lineHeight: 1.5,
+          }}
+          onInput={(e) => {
+            const el = e.currentTarget;
+            el.style.height = 'auto';
+            el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
           }}
         />
         <button
-          type="submit"
+          onClick={() => handleSubmit()}
           style={{
             background: input.trim() ? 'var(--pixel-accent)' : 'transparent',
             border: 'none',
@@ -192,11 +218,12 @@ export function TerminalPanel({ messages, onSend, onClose, wsStatus }: TerminalP
             fontSize: 17,
             fontFamily: 'monospace',
             transition: 'background 0.15s',
+            alignSelf: 'stretch',
           }}
         >
           ↵
         </button>
-      </form>
+      </div>
     </div>
   );
 }

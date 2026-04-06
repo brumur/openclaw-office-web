@@ -517,14 +517,19 @@ function App() {
       </div>
 
       {/* Chat panel — overlay on the right, canvas stays full size */}
-      {chatOpen && (
-        <TerminalPanel
-          messages={messagesByAgent[selectedChatAgentId] ?? []}
-          onSend={handleSendInput}
-          onClose={() => setIsTerminalOpen(false)}
-          wsStatus={wsStatus}
-        />
-      )}
+      {chatOpen && (() => {
+        const ch = officeState.characters.get(selectedChatAgentId);
+        return (
+          <TerminalPanel
+            messages={messagesByAgent[selectedChatAgentId] ?? []}
+            onSend={handleSendInput}
+            onClose={() => setIsTerminalOpen(false)}
+            wsStatus={wsStatus}
+            agentName={ch?.folderName}
+            agentSessionKey={ch?.sessionKey}
+          />
+        );
+      })()}
 
       {showMigrationNotice && (
         <div
