@@ -11,3 +11,11 @@ services:
       PIXEL_PASS: ${PIXEL_PASS:?PIXEL_PASS is required}
       OPENCLAW_TOKEN: ${OPENCLAW_TOKEN:?OPENCLAW_TOKEN is required}
       OPENCLAW_URL: ${OPENCLAW_URL:-http://185.205.244.235:18789}
+      # Points to the persistent identity file inside the named volume below.
+      # Without this, every --build regenerates the identity and requires re-pairing.
+      OPENCLAW_IDENTITY_PATH: /data/identity.json
+    volumes:
+      - pixel-office-data:/data
+
+volumes:
+  pixel-office-data:
