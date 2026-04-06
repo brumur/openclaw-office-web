@@ -188,6 +188,8 @@ export interface Character {
   matrixEffectTimer: number;
   /** Per-column random seeds (16 values) for staggered rain timing */
   matrixEffectSeeds: number[];
-  /** Workspace folder name (only set for multi-root workspaces) */
+  /** Display name of the agent (e.g. "Jarvis", "Lexi") */
   folderName?: string;
+  /** Full OpenClaw sessionKey (e.g. "agent:main:main") */
+  sessionKey?: string;
 }

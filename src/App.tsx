@@ -1,11 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { agentColor } from './agentColors.js';
-import { toMajorMinor } from './changelogData.js';
 import { BottomToolbar } from './components/BottomToolbar.js';
-import { ChangelogModal } from './components/ChangelogModal.js';
 import { DebugView } from './components/DebugView.js';
-import { VersionIndicator } from './components/VersionIndicator.js';
 import { ZoomControls } from './components/ZoomControls.js';
 import { PULSE_ANIMATION_DURATION_SEC } from './constants.js';
 import { useEditorActions } from './hooks/useEditorActions.js';
@@ -244,12 +241,6 @@ function App() {
     layoutReady,
     layoutWasReset,
     loadedAssets,
-    workspaceFolders,
-    externalAssetDirectories,
-    lastSeenVersion,
-    extensionVersion,
-    watchAllSessions,
-    setWatchAllSessions,
     alwaysShowLabels,
   } = useExtensionMessages(getOfficeState, editor.setLastSavedLayout, isEditDirty);
 
@@ -257,20 +248,8 @@ function App() {
   const [migrationNoticeDismissed, setMigrationNoticeDismissed] = useState(false);
   const showMigrationNotice = layoutWasReset && !migrationNoticeDismissed;
 
-  const [isChangelogOpen, setIsChangelogOpen] = useState(false);
   const [isDebugMode, setIsDebugMode] = useState(false);
   const [alwaysShowOverlay, setAlwaysShowOverlay] = useState(false);
-
-  const currentMajorMinor = toMajorMinor(extensionVersion);
-
-  const handleWhatsNewDismiss = useCallback(() => {
-    vscode.postMessage({ type: 'setLastSeenVersion', version: currentMajorMinor });
-  }, [currentMajorMinor]);
-
-  const handleOpenChangelog = useCallback(() => {
-    setIsChangelogOpen(true);
-    vscode.postMessage({ type: 'setLastSeenVersion', version: currentMajorMinor });
-  }, [currentMajorMinor]);
 
   // Sync alwaysShowOverlay from persisted settings
   useEffect(() => {
@@ -431,19 +410,6 @@ function App() {
           onToggleAlwaysShowOverlay={handleToggleAlwaysShowOverlay}
           onOpenChat={() => setIsTerminalOpen(true)}
           onClearHistory={handleClearHistory}
-        />
-
-        <VersionIndicator
-          currentVersion={extensionVersion}
-          lastSeenVersion={lastSeenVersion}
-          onDismiss={handleWhatsNewDismiss}
-          onOpenChangelog={handleOpenChangelog}
-        />
-
-        <ChangelogModal
-          isOpen={isChangelogOpen}
-          onClose={() => setIsChangelogOpen(false)}
-          currentVersion={extensionVersion}
         />
 
         {editor.isEditMode && editor.isDirty && (

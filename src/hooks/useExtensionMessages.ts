@@ -56,12 +56,6 @@ export interface ExtensionMessageState {
   layoutReady: boolean;
   layoutWasReset: boolean;
   loadedAssets?: { catalog: FurnitureAsset[]; sprites: Record<string, string[][]> };
-  workspaceFolders: WorkspaceFolder[];
-  externalAssetDirectories: string[];
-  lastSeenVersion: string;
-  extensionVersion: string;
-  watchAllSessions: boolean;
-  setWatchAllSessions: (v: boolean) => void;
   alwaysShowLabels: boolean;
 }
 
@@ -93,11 +87,6 @@ export function useExtensionMessages(
   const [loadedAssets, setLoadedAssets] = useState<
     { catalog: FurnitureAsset[]; sprites: Record<string, string[][]> } | undefined
   >();
-  const [workspaceFolders, setWorkspaceFolders] = useState<WorkspaceFolder[]>([]);
-  const [externalAssetDirectories, setExternalAssetDirectories] = useState<string[]>([]);
-  const [lastSeenVersion, setLastSeenVersion] = useState('');
-  const [extensionVersion, setExtensionVersion] = useState('');
-  const [watchAllSessions, setWatchAllSessions] = useState(false);
   const [alwaysShowLabels, setAlwaysShowLabels] = useState(false);
 
   // Track whether initial layout has been loaded (ref to avoid re-render)
@@ -147,11 +136,12 @@ export function useExtensionMessages(
         }
       } else if (msg.type === 'agentCreated') {
         const id = msg.id as number;
-        const folderName = msg.folderName as string | undefined;
+        const name = (msg.name ?? msg.folderName) as string | undefined;
+        const sessionKey = msg.sessionKey as string | undefined;
         if (msg.resident) residentAgents.current.add(id);
         setAgents((prev) => (prev.includes(id) ? prev : [...prev, id]));
         setSelectedAgent(id);
-        os.addAgent(id, undefined, undefined, undefined, undefined, folderName);
+        os.addAgent(id, undefined, undefined, undefined, undefined, name, sessionKey);
         saveAgentSeats(os);
       } else if (msg.type === 'agentClosed') {
         const id = msg.id as number;
@@ -402,24 +392,8 @@ export function useExtensionMessages(
       } else if (msg.type === 'settingsLoaded') {
         const soundOn = msg.soundEnabled as boolean;
         setSoundEnabled(soundOn);
-        if (typeof msg.watchAllSessions === 'boolean') {
-          setWatchAllSessions(msg.watchAllSessions as boolean);
-        }
         if (typeof msg.alwaysShowLabels === 'boolean') {
           setAlwaysShowLabels(msg.alwaysShowLabels as boolean);
-        }
-        if (Array.isArray(msg.externalAssetDirectories)) {
-          setExternalAssetDirectories(msg.externalAssetDirectories as string[]);
-        }
-        if (typeof msg.lastSeenVersion === 'string') {
-          setLastSeenVersion(msg.lastSeenVersion as string);
-        }
-        if (typeof msg.extensionVersion === 'string') {
-          setExtensionVersion(msg.extensionVersion as string);
-        }
-      } else if (msg.type === 'externalAssetDirectoriesUpdated') {
-        if (Array.isArray(msg.dirs)) {
-          setExternalAssetDirectories(msg.dirs as string[]);
         }
       } else if (msg.type === 'furnitureAssetsLoaded') {
         try {
@@ -449,12 +423,6 @@ export function useExtensionMessages(
     layoutReady,
     layoutWasReset,
     loadedAssets,
-    workspaceFolders,
-    externalAssetDirectories,
-    lastSeenVersion,
-    extensionVersion,
-    watchAllSessions,
-    setWatchAllSessions,
     alwaysShowLabels,
   };
 }

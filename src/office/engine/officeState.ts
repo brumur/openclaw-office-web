@@ -266,6 +266,7 @@ export class OfficeState {
     preferredSeatId?: string,
     skipSpawnEffect?: boolean,
     folderName?: string,
+    sessionKey?: string,
   ): void {
     if (this.characters.has(id)) return;
 
@@ -312,6 +313,9 @@ export class OfficeState {
 
     if (folderName) {
       ch.folderName = folderName;
+    }
+    if (sessionKey) {
+      ch.sessionKey = sessionKey;
     }
     if (!skipSpawnEffect) {
       ch.matrixEffect = 'spawn';

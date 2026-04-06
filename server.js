@@ -75,34 +75,48 @@ let currentAgentId = 1;
 // These always appear in the office, even before any OpenClaw event arrives.
 // sessionKey must match the format OpenClaw uses in events (agent:<workspace>:<name>).
 const RESIDENTS = [
-  { id: 1, label: 'main',  sessionKey: 'agent:main:main',   shortKey: 'main'  },
-  { id: 2, label: 'lexi',  sessionKey: 'agent:lexi:lexi',   shortKey: 'lexi'  },
-  { id: 3, label: 'dev',   sessionKey: 'agent:dev:dev',     shortKey: 'dev'   },
-  { id: 4, label: 'infra', sessionKey: 'agent:infra:infra', shortKey: 'infra' },
+  { id: 1, name: 'Jarvis', sessionKey: 'agent:main:main'   },
+  { id: 2, name: 'Lexi',   sessionKey: 'agent:lexi:lexi'   },
+  { id: 3, name: 'Dev',    sessionKey: 'agent:dev:dev'     },
+  { id: 4, name: 'Infra',  sessionKey: 'agent:infra:infra' },
 ];
 
 let nextAgentId = RESIDENTS.length + 1;
 
-// Session registry: maps sessionKey <-> agentId
+// Session registry: maps full sessionKey <-> agentId
+// We only use full keys to avoid collisions (e.g. agent:dev:main vs agent:main:main both have "main")
 const sessionToAgent = new Map();
-const agentToSession = new Map(); // agentId -> shortKey (for chat.send)
+const agentToSession = new Map(); // agentId -> full sessionKey (for chat.send)
 
 for (const r of RESIDENTS) {
   sessionToAgent.set(r.sessionKey, r.id);
-  sessionToAgent.set(r.shortKey, r.id);
-  agentToSession.set(r.id, r.shortKey);
+  agentToSession.set(r.id, r.sessionKey);
 }
 
 function isSubagentSession(sessionKey) {
   return sessionKey?.includes(':subagent:');
 }
 
-// Extract short session name for chat.send from a full event sessionKey
-// "agent:main:lexi" → "lexi", "agent:main:main" → "main"
-function shortSessionKey(evtSession) {
+// Derive a human-readable label from a full sessionKey
+// "agent:lexi:whatsapp:direct:+556..." → "lexi", "agent:main:main" → "main"
+function sessionLabel(evtSession) {
   const parts = evtSession.split(':');
-  // format is agent:<workspace>:<sessionName>
-  return parts.length >= 3 ? parts[2] : evtSession;
+  return parts.length >= 2 ? parts[1] : evtSession;
+}
+
+// Find the resident that owns a given sessionKey.
+// For non-main workspaces (dev, lexi, infra): any session in that workspace → resident.
+// For main workspace: only exact match (agent:main:main → Jarvis).
+function residentForSession(evtSession) {
+  if (isSubagentSession(evtSession)) return null;
+  const parts = evtSession.split(':');
+  const workspace = parts[1];
+  return RESIDENTS.find((r) => {
+    const rWorkspace = r.sessionKey.split(':')[1];
+    if (workspace !== rWorkspace) return false;
+    if (workspace === 'main') return evtSession === r.sessionKey; // strict for main
+    return true; // any session in dev/lexi/infra workspace → that resident
+  }) ?? null;
 }
 
 wss.on('connection', (ws) => {
@@ -112,7 +126,7 @@ wss.on('connection', (ws) => {
   // If OpenClaw is already connected, immediately announce all residents to this new client
   if (openclawReady) {
     for (const r of RESIDENTS) {
-      ws.send(JSON.stringify({ type: 'agentCreated', id: r.id, folderName: r.label, resident: true }));
+      ws.send(JSON.stringify({ type: 'agentCreated', id: r.id, name: r.name, sessionKey: r.sessionKey, resident: true }));
       ws.send(JSON.stringify({ type: 'agentStatus', id: r.id, status: 'idle' }));
     }
   }
@@ -260,7 +274,7 @@ function connectToOpenClaw() {
 
       // Announce all resident agents to the UI
       for (const r of RESIDENTS) {
-        broadcast({ type: 'agentCreated', id: r.id, folderName: r.label, resident: true });
+        broadcast({ type: 'agentCreated', id: r.id, name: r.name, sessionKey: r.sessionKey, resident: true });
         broadcast({ type: 'agentStatus', id: r.id, status: 'idle' });
       }
       return;
@@ -281,16 +295,22 @@ function connectToOpenClaw() {
       let agentId = currentAgentId;
       if (evtSession) {
         if (!sessionToAgent.has(evtSession)) {
-          // New session discovered — register a new agent
-          const newId = nextAgentId++;
-          const short = shortSessionKey(evtSession);
-          sessionToAgent.set(evtSession, newId);
-          sessionToAgent.set(short, newId);
-          agentToSession.set(newId, short); // short name for chat.send
-          const resident = !isSubagentSession(evtSession);
-          broadcast({ type: 'agentCreated', id: newId, folderName: short, resident });
-          broadcast({ type: 'agentStatus', id: newId, status: 'idle' });
-          console.log(`[Session] New session "${evtSession}" (short: ${short}) → agentId=${newId}`);
+          const knownResident = residentForSession(evtSession);
+          if (knownResident) {
+            // Route to existing resident — different sessionKey, same workspace
+            sessionToAgent.set(evtSession, knownResident.id);
+            console.log(`[Session] "${evtSession}" → resident "${knownResident.name}" (agentId=${knownResident.id})`);
+          } else {
+            // Genuinely new session — create a new agent
+            const newId = nextAgentId++;
+            const label = sessionLabel(evtSession);
+            sessionToAgent.set(evtSession, newId);
+            agentToSession.set(newId, evtSession);
+            const resident = false;
+            broadcast({ type: 'agentCreated', id: newId, name: label, sessionKey: evtSession, resident });
+            broadcast({ type: 'agentStatus', id: newId, status: 'idle' });
+            console.log(`[Session] New session "${evtSession}" (label: ${label}) → agentId=${newId}`);
+          }
         }
         agentId = sessionToAgent.get(evtSession);
         currentAgentId = agentId; // keep currentAgentId in sync for fallback
