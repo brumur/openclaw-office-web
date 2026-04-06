@@ -90,8 +90,9 @@ export function AgentLabels({
         const sessionKeyText = !ch.isSubagent ? ch.sessionKey : undefined;
 
         // Selected chat agent ring
+        // ch.y is the bottom-center anchor (same as renderer: drawY = offsetY + ch.y*zoom - height)
         const isChatSelected = !isSub && selectedChatAgentId === id;
-        const charScreenY = (deviceOffsetY + ch.y * zoom) / dpr;
+        const charScreenY = (deviceOffsetY + (ch.y + sittingOffset - CHAR_H) * zoom) / dpr;
         const charW = (CHAR_W * zoom) / dpr;
         const charH = (CHAR_H * zoom) / dpr;
         const ringPad = 3;
