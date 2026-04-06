@@ -387,8 +387,7 @@ export function useExtensionMessages(
         console.log(`[Webview] Received ${sets.length} wall tile set(s)`);
         setWallSprites(sets);
       } else if (msg.type === 'workspaceFolders') {
-        const folders = msg.folders as WorkspaceFolder[];
-        setWorkspaceFolders(folders);
+        // no-op: workspace folders not used in this build
       } else if (msg.type === 'settingsLoaded') {
         const soundOn = msg.soundEnabled as boolean;
         setSoundEnabled(soundOn);

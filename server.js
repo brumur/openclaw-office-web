@@ -23,7 +23,10 @@ const PIXEL_USER        = process.env.PIXEL_USER ?? 'admin';
 const PIXEL_PASS        = process.env.PIXEL_PASS ?? 'pixel123';
 const SESSION_TTL_MS    = 24 * 60 * 60 * 1000; // 24 h
 
-if (!process.env.PIXEL_USER || !process.env.PIXEL_PASS) {
+if (process.env.NODE_ENV === 'production' && (!process.env.PIXEL_USER || !process.env.PIXEL_PASS)) {
+  console.error('[Auth] PIXEL_USER and PIXEL_PASS must be set in production. Refusing to start with default credentials.');
+  process.exit(1);
+} else if (!process.env.PIXEL_USER || !process.env.PIXEL_PASS) {
   console.warn('[Auth] PIXEL_USER / PIXEL_PASS not set — using default credentials (admin/pixel123). Set them in your environment for security.');
 }
 
@@ -475,9 +478,9 @@ app.post('/api/spawn-agent', authMiddleware, (_req, res) => {
 if (process.env.NODE_ENV === 'production') {
   const distDir = path.join(__dirname, 'dist');
   app.use(express.static(distDir));
-  // SPA fallback — any non-API route serves index.html
-  app.get('*', (req, res) => {
-    if (req.path.startsWith('/api/')) return res.status(404).json({ error: 'Not found' });
+  // SPA fallback — Express 5 compatible (no wildcard '*', use middleware)
+  app.use((req, res, next) => {
+    if (req.path.startsWith('/api/')) return next();
     res.sendFile(path.join(distDir, 'index.html'));
   });
 }
