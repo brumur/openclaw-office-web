@@ -32,9 +32,6 @@ interface TerminalPanelProps {
   onLogout?: () => void;
   width: number;
   onWidthChange: (w: number) => void;
-  isMobile?: boolean;
-  mobileHeight?: number;
-  onMobileHeightChange?: (h: number) => void;
 }
 
 const STATUS_DOT: Record<WsStatus, { color: string; title: string; pulse: boolean }> = {
@@ -54,9 +51,6 @@ export function TerminalPanel({
   onLogout,
   width,
   onWidthChange,
-  isMobile = false,
-  mobileHeight = 380,
-  onMobileHeightChange,
 }: TerminalPanelProps) {
   const [input, setInput] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -88,73 +82,33 @@ export function TerminalPanel({
     }
   };
 
-  // ── Drag-to-resize (desktop: left edge; mobile: top edge) ─────────────────
-  const dragRef = useRef<{ startPos: number; startSize: number } | null>(null);
+  // ── Drag-to-resize handle ──────────────────────────────────────────────────
+  const dragRef = useRef<{ startX: number; startWidth: number } | null>(null);
 
-  const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
+  const handleDragStart = (e: React.MouseEvent) => {
     e.preventDefault();
-    const startPos = 'touches' in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
-    dragRef.current = { startPos, startSize: width };
+    dragRef.current = { startX: e.clientX, startWidth: width };
 
-    const onMove = (ev: MouseEvent | TouchEvent) => {
+    const onMove = (ev: MouseEvent) => {
       if (!dragRef.current) return;
-      const pos = 'touches' in ev ? (ev as TouchEvent).touches[0].clientX : (ev as MouseEvent).clientX;
-      const delta = dragRef.current.startPos - pos;
-      onWidthChange(Math.min(700, Math.max(280, dragRef.current.startSize + delta)));
+      const delta = dragRef.current.startX - ev.clientX;
+      const newWidth = Math.min(700, Math.max(280, dragRef.current.startWidth + delta));
+      onWidthChange(newWidth);
     };
+
     const onUp = () => {
       dragRef.current = null;
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
-      window.removeEventListener('touchmove', onMove);
-      window.removeEventListener('touchend', onUp);
     };
+
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
-    window.addEventListener('touchmove', onMove, { passive: false });
-    window.addEventListener('touchend', onUp);
-  };
-
-  const handleMobileDragStart = (e: React.MouseEvent | React.TouchEvent) => {
-    e.preventDefault();
-    const startPos = 'touches' in e ? e.touches[0].clientY : (e as React.MouseEvent).clientY;
-    dragRef.current = { startPos, startSize: mobileHeight };
-
-    const onMove = (ev: MouseEvent | TouchEvent) => {
-      if (!dragRef.current) return;
-      const pos = 'touches' in ev ? (ev as TouchEvent).touches[0].clientY : (ev as MouseEvent).clientY;
-      const delta = dragRef.current.startPos - pos; // drag up = increase height
-      onMobileHeightChange?.(Math.min(window.innerHeight * 0.92, Math.max(120, dragRef.current.startSize + delta)));
-    };
-    const onUp = () => {
-      dragRef.current = null;
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onUp);
-      window.removeEventListener('touchmove', onMove);
-      window.removeEventListener('touchend', onUp);
-    };
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
-    window.addEventListener('touchmove', onMove, { passive: false });
-    window.addEventListener('touchend', onUp);
   };
 
   return (
     <div
-      style={isMobile ? {
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        height: mobileHeight,
-        background: 'rgba(10, 10, 18, 0.98)',
-        borderTop: `2px solid ${activeColor}55`,
-        display: 'flex',
-        flexDirection: 'column',
-        boxShadow: `0 -8px 32px rgba(0,0,0,0.7)`,
-        zIndex: 200,
-        transition: 'border-color 0.2s',
-      } : {
+      style={{
         width,
         height: '100%',
         flexShrink: 0,
@@ -167,45 +121,19 @@ export function TerminalPanel({
         position: 'relative',
       }}
     >
-      {/* Desktop: left-edge drag handle */}
-      {!isMobile && (
-        <div
-          onMouseDown={handleDragStart}
-          style={{
-            position: 'absolute',
-            left: -4,
-            top: 0,
-            bottom: 0,
-            width: 8,
-            cursor: 'col-resize',
-            zIndex: 10,
-          }}
-        />
-      )}
-
-      {/* Mobile: top drag pill */}
-      {isMobile && (
-        <div
-          onMouseDown={handleMobileDragStart}
-          onTouchStart={handleMobileDragStart}
-          style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            padding: '8px 0 4px',
-            cursor: 'row-resize',
-            flexShrink: 0,
-            touchAction: 'none',
-          }}
-        >
-          <div style={{
-            width: 36,
-            height: 4,
-            borderRadius: 2,
-            background: 'rgba(255,255,255,0.2)',
-          }} />
-        </div>
-      )}
+      {/* Drag handle */}
+      <div
+        onMouseDown={handleDragStart}
+        style={{
+          position: 'absolute',
+          left: -4,
+          top: 0,
+          bottom: 0,
+          width: 8,
+          cursor: 'col-resize',
+          zIndex: 10,
+        }}
+      />
 
       {/* Header */}
       <div

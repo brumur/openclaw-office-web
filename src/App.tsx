@@ -8,7 +8,6 @@ import { PULSE_ANIMATION_DURATION_SEC } from './constants.js';
 import { useEditorActions } from './hooks/useEditorActions.js';
 import { useEditorKeyboard } from './hooks/useEditorKeyboard.js';
 import { useExtensionMessages } from './hooks/useExtensionMessages.js';
-import { useIsMobile } from './hooks/useIsMobile.js';
 import { OfficeCanvas } from './office/components/OfficeCanvas.js';
 import { ToolOverlay } from './office/components/ToolOverlay.js';
 import { EditorState } from './office/editor/editorState.js';
@@ -169,8 +168,6 @@ function App() {
   const [unreadByAgent, setUnreadByAgent] = useState<Record<number, number>>({});
   const [isTerminalOpen, setIsTerminalOpen] = useState(true);
   const [chatWidth, setChatWidth] = useState(380);
-  const [mobileHeight, setMobileHeight] = useState(() => Math.round(window.innerHeight * 0.55));
-  const isMobile = useIsMobile();
   const [wsStatus, setWsStatus] = useState<WsStatus>('connecting');
 
   // Keep a ref so the message handler always sees the current selected agent
@@ -391,10 +388,6 @@ function App() {
 
   const chatOpen = isTerminalOpen && agents.length > 0 && !isDebugMode;
 
-  // On mobile the chat is a fixed overlay — shift the map center upward so it
-  // appears centered in the visible area (above the bottom sheet).
-  const centerOffsetY = isMobile && chatOpen ? -mobileHeight / 2 : 0;
-
   // Build agent tab descriptors for the chat tab bar
   const agentTabs = agents.map((id) => {
     const ch = officeState.characters.get(id);
@@ -439,7 +432,6 @@ function App() {
           zoom={editor.zoom}
           onZoomChange={editor.handleZoomChange}
           panRef={editor.panRef}
-          centerOffsetY={centerOffsetY}
         />
 
         {!isDebugMode && <ZoomControls zoom={editor.zoom} onZoomChange={editor.handleZoomChange} />}
@@ -465,8 +457,6 @@ function App() {
           onOpenChat={() => setIsTerminalOpen(true)}
           onClearHistory={handleClearHistory}
           unreadCount={chatOpen ? 0 : Object.values(unreadByAgent).reduce((a, b) => a + b, 0)}
-          isMobile={isMobile}
-          chatOpenHeight={isMobile && chatOpen ? mobileHeight : 0}
         />
 
         {editor.isEditMode && editor.isDirty && (
@@ -536,7 +526,6 @@ function App() {
             panRef={editor.panRef}
             subagentCharacters={subagentCharacters}
             selectedChatAgentId={selectedChatAgentId ?? undefined}
-            centerOffsetY={centerOffsetY}
           />
         )}
 
@@ -582,9 +571,6 @@ function App() {
           }}
           width={chatWidth}
           onWidthChange={setChatWidth}
-          isMobile={isMobile}
-          mobileHeight={mobileHeight}
-          onMobileHeightChange={setMobileHeight}
         />
       )}
 

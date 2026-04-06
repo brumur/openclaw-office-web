@@ -12,9 +12,22 @@ interface BottomToolbarProps {
   onOpenChat: () => void;
   onClearHistory: () => void;
   unreadCount?: number;
-  isMobile?: boolean;
-  chatOpenHeight?: number;
 }
+
+const panelStyle: React.CSSProperties = {
+  position: 'absolute',
+  bottom: 10,
+  left: 10,
+  zIndex: 'var(--pixel-controls-z)',
+  display: 'flex',
+  alignItems: 'center',
+  gap: 4,
+  background: 'var(--pixel-bg)',
+  border: '2px solid var(--pixel-border)',
+  borderRadius: 0,
+  padding: '4px 6px',
+  boxShadow: 'var(--pixel-shadow)',
+};
 
 const btnBase: React.CSSProperties = {
   padding: '5px 10px',
@@ -42,34 +55,9 @@ export function BottomToolbar({
   onOpenChat,
   onClearHistory,
   unreadCount = 0,
-  isMobile = false,
-  chatOpenHeight = 0,
 }: BottomToolbarProps) {
   const [hovered, setHovered] = useState<string | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-
-  const panelStyle: React.CSSProperties = {
-    position: 'absolute',
-    bottom: isMobile ? chatOpenHeight + 10 : 10,
-    left: 10,
-    zIndex: 'var(--pixel-controls-z)',
-    display: 'flex',
-    alignItems: 'center',
-    gap: 4,
-    background: 'var(--pixel-bg)',
-    border: '2px solid var(--pixel-border)',
-    borderRadius: 0,
-    padding: isMobile ? '6px 8px' : '4px 6px',
-    boxShadow: 'var(--pixel-shadow)',
-    transition: 'bottom 0.2s ease',
-  };
-
-  const btnMobile: React.CSSProperties = isMobile ? {
-    padding: '10px 14px',
-    fontSize: '20px',
-    minWidth: 44,
-    minHeight: 44,
-  } : {};
 
   return (
     <div style={panelStyle}>
@@ -81,8 +69,7 @@ export function BottomToolbar({
           onMouseLeave={() => setHovered(null)}
           style={{
             ...btnBase,
-            ...btnMobile,
-            padding: isMobile ? '10px 16px' : '5px 12px',
+            padding: '5px 12px',
             background:
               hovered === 'chat'
                 ? 'var(--pixel-agent-hover-bg, var(--pixel-btn-hover-bg))'
@@ -128,8 +115,8 @@ export function BottomToolbar({
         onMouseLeave={() => setHovered(null)}
         style={
           isEditMode
-            ? { ...btnActive, ...btnMobile }
-            : { ...btnBase, ...btnMobile, background: hovered === 'edit' ? 'var(--pixel-btn-hover-bg)' : btnBase.background }
+            ? btnActive
+            : { ...btnBase, background: hovered === 'edit' ? 'var(--pixel-btn-hover-bg)' : btnBase.background }
         }
         title="Edit office layout"
       >

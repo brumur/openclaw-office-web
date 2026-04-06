@@ -40,8 +40,6 @@ interface OfficeCanvasProps {
   zoom: number;
   onZoomChange: (zoom: number) => void;
   panRef: React.MutableRefObject<{ x: number; y: number }>;
-  /** CSS pixels to shift the visual center vertically (negative = up). Used on mobile to account for bottom sheet overlay. */
-  centerOffsetY?: number;
 }
 
 export function OfficeCanvas({
@@ -60,7 +58,6 @@ export function OfficeCanvas({
   zoom,
   onZoomChange,
   panRef,
-  centerOffsetY = 0,
 }: OfficeCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -75,17 +72,6 @@ export function OfficeCanvas({
   const isEraseDraggingRef = useRef(false);
   // Zoom scroll accumulator for trackpad pinch sensitivity
   const zoomAccumulatorRef = useRef(0);
-  // Touch state for mobile pan/pinch/tap
-  const touchStateRef = useRef<{
-    startX: number;
-    startY: number;
-    startPanX: number;
-    startPanY: number;
-    lastPinchDist: number;
-    lastMidX: number;
-    lastMidY: number;
-    moved: boolean;
-  } | null>(null);
 
   // Clamp pan so the map edge can't go past a margin inside the viewport
   const clampPan = useCallback(
@@ -277,7 +263,7 @@ export function OfficeCanvas({
           officeState.getCharacters(),
           zoom,
           panRef.current.x,
-          panRef.current.y + centerOffsetY * (window.devicePixelRatio || 1),
+          panRef.current.y,
           selectionRender,
           editorRender,
           officeState.getLayout().tileColors,
@@ -753,122 +739,6 @@ export function OfficeCanvas({
     [officeState, onClick, onDeselect, screenToWorld, screenToTile, isEditMode],
   );
 
-  // ── Touch handlers (mobile pan / pinch-zoom / tap) ─────────────────────────
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    if (isEditMode) return;
-    e.preventDefault();
-    unlockAudio();
-    const t = e.touches;
-    officeState.cameraFollowId = null;
-
-    if (t.length === 1) {
-      touchStateRef.current = {
-        startX: t[0].clientX,
-        startY: t[0].clientY,
-        startPanX: panRef.current.x,
-        startPanY: panRef.current.y,
-        lastPinchDist: 0,
-        lastMidX: t[0].clientX,
-        lastMidY: t[0].clientY,
-        moved: false,
-      };
-    } else if (t.length === 2) {
-      const dx = t[1].clientX - t[0].clientX;
-      const dy = t[1].clientY - t[0].clientY;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      const midX = (t[0].clientX + t[1].clientX) / 2;
-      const midY = (t[0].clientY + t[1].clientY) / 2;
-      touchStateRef.current = {
-        startX: midX,
-        startY: midY,
-        startPanX: panRef.current.x,
-        startPanY: panRef.current.y,
-        lastPinchDist: dist,
-        lastMidX: midX,
-        lastMidY: midY,
-        moved: false,
-      };
-    }
-  }, [isEditMode, officeState, panRef]);
-
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (isEditMode || !touchStateRef.current) return;
-    e.preventDefault();
-    const t = e.touches;
-    const state = touchStateRef.current;
-    const dpr = window.devicePixelRatio || 1;
-
-    if (t.length === 1) {
-      const dx = t[0].clientX - state.lastMidX;
-      const dy = t[0].clientY - state.lastMidY;
-      if (Math.abs(t[0].clientX - state.startX) > 5 || Math.abs(t[0].clientY - state.startY) > 5) {
-        state.moved = true;
-      }
-      panRef.current = clampPan(panRef.current.x + dx * dpr, panRef.current.y + dy * dpr);
-      state.lastMidX = t[0].clientX;
-      state.lastMidY = t[0].clientY;
-    } else if (t.length === 2) {
-      state.moved = true;
-      const dx = t[1].clientX - t[0].clientX;
-      const dy = t[1].clientY - t[0].clientY;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      const midX = (t[0].clientX + t[1].clientX) / 2;
-      const midY = (t[0].clientY + t[1].clientY) / 2;
-
-      // Pinch zoom
-      if (state.lastPinchDist > 0) {
-        const ratio = dist / state.lastPinchDist;
-        if (Math.abs(ratio - 1) > 0.04) {
-          const newZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, zoom * ratio));
-          if (newZoom !== zoom) onZoomChange(Math.round(newZoom));
-          state.lastPinchDist = dist;
-        }
-      }
-
-      // Pan with midpoint
-      const panDx = midX - state.lastMidX;
-      const panDy = midY - state.lastMidY;
-      panRef.current = clampPan(panRef.current.x + panDx * dpr, panRef.current.y + panDy * dpr);
-      state.lastMidX = midX;
-      state.lastMidY = midY;
-    }
-  }, [isEditMode, zoom, onZoomChange, panRef, clampPan]);
-
-  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
-    if (isEditMode || !touchStateRef.current) return;
-    e.preventDefault();
-    const state = touchStateRef.current;
-
-    // Tap (no significant movement) — treat as click
-    if (!state.moved && e.changedTouches.length === 1) {
-      const t = e.changedTouches[0];
-      const pos = screenToWorld(t.clientX, t.clientY);
-      if (pos) {
-        const hitId = officeState.getCharacterAt(pos.worldX, pos.worldY);
-        if (hitId !== null) {
-          officeState.dismissBubble(hitId);
-          if (officeState.selectedAgentId === hitId) {
-            officeState.selectedAgentId = null;
-            officeState.cameraFollowId = null;
-            onDeselect?.();
-          } else {
-            officeState.selectedAgentId = hitId;
-            officeState.cameraFollowId = hitId;
-          }
-          onClick(hitId);
-        } else {
-          officeState.selectedAgentId = null;
-          officeState.cameraFollowId = null;
-          onDeselect?.();
-        }
-      }
-    }
-
-    if (e.touches.length === 0) {
-      touchStateRef.current = null;
-    }
-  }, [isEditMode, officeState, screenToWorld, onClick, onDeselect]);
-
   const handleMouseLeave = useCallback(() => {
     isPanningRef.current = false;
     isEraseDraggingRef.current = false;
@@ -957,11 +827,9 @@ export function OfficeCanvas({
         onClick={handleClick}
         onAuxClick={handleAuxClick}
         onMouseLeave={handleMouseLeave}
+
         onContextMenu={handleContextMenu}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        style={{ display: 'block', touchAction: 'none' }}
+        style={{ display: 'block' }}
       />
     </div>
   );
