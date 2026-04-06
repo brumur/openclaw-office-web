@@ -23,10 +23,7 @@ const PIXEL_USER        = process.env.PIXEL_USER ?? 'admin';
 const PIXEL_PASS        = process.env.PIXEL_PASS ?? 'pixel123';
 const SESSION_TTL_MS    = 24 * 60 * 60 * 1000; // 24 h
 
-if (process.env.NODE_ENV === 'production' && (!process.env.PIXEL_USER || !process.env.PIXEL_PASS)) {
-  console.error('[Auth] PIXEL_USER and PIXEL_PASS must be set in production. Refusing to start with default credentials.');
-  process.exit(1);
-} else if (!process.env.PIXEL_USER || !process.env.PIXEL_PASS) {
+if (!process.env.PIXEL_USER || !process.env.PIXEL_PASS) {
   console.warn('[Auth] PIXEL_USER / PIXEL_PASS not set — using default credentials (admin/pixel123). Set them in your environment for security.');
 }
 
@@ -190,7 +187,7 @@ wss.on('connection', (ws) => {
   console.log('Browser client connected');
   clients.push(ws);
 
-  // Always announce residents — office should be populated even while bridge reconnects
+  // Always announce residents so the office is populated even while the bridge reconnects.
   sendResidents(ws);
   sendBridgeStatus(bridgeStatus, ws);
 
@@ -361,7 +358,7 @@ function connectToOpenClaw() {
       const v = msg.payload.server?.version;
       console.log(`[OpenClaw] Connected! Server ${v}, protocol ${msg.payload.protocol}`);
 
-      // Re-announce residents in case clients connected before the bridge was ready
+      // Re-announce residents in case clients connected before the bridge was ready.
       sendResidents();
       return;
     }
@@ -501,9 +498,9 @@ app.post('/api/spawn-agent', authMiddleware, (_req, res) => {
 if (process.env.NODE_ENV === 'production') {
   const distDir = path.join(__dirname, 'dist');
   app.use(express.static(distDir));
-  // SPA fallback — Express 5 compatible (no wildcard '*', use middleware)
-  app.use((req, res, next) => {
-    if (req.path.startsWith('/api/')) return next();
+  // SPA fallback — any non-API route serves index.html
+  app.get('/{*path}', (req, res) => {
+    if (req.path.startsWith('/api/')) return res.status(404).json({ error: 'Not found' });
     res.sendFile(path.join(distDir, 'index.html'));
   });
 }

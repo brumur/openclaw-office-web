@@ -16,13 +16,14 @@ O resultado é um escritório pixel-art no browser onde personagens animados rep
 
 ```
 Browser (React + Canvas)
-    ↕ WebSocket ws://localhost:3002
+    ↕ HTTP + WebSocket em /ws no mesmo host
 server.js (Node/Express)
     ↕ WebSocket ws://185.205.244.235:18789  (OpenClaw gateway)
 ```
 
-- **Porta 3000** — Express HTTP (REST: `/api/spawn-agent`)
-- **Porta 3002** — WebSocket browser-facing (eventos para o frontend)
+- **Porta 3000** — `server.js` serve HTTP + `/ws`
+- **Porta 8090** — Vite em desenvolvimento
+- **Porta 7080** — publish validado no host Jarvis apontando para `3000`
 - **VPS** — OpenClaw em `http://185.205.244.235:18789`, token `admin-token-123`
 
 ---
@@ -49,7 +50,8 @@ O OpenClaw exige autenticação por dispositivo com par de chaves Ed25519. O flu
 **Erros encontrados durante setup:**
 - `protocol mismatch` → usar `minProtocol: 3, maxProtocol: 3` (não 1)
 - `cleared scopes` → conectar só com token sem device não concede scopes
-- `PAIRING_REQUIRED` → device precisa ser aprovado: `openclaw devices approve <deviceId>`
+- `PAIRING_REQUIRED` / `not-paired` → device precisa ser aprovado: `openclaw devices approve <deviceId>`
+- `ENOTFOUND host.docker.internal` em container Linux → usar `OPENCLAW_URL=http://172.17.0.1:18789` no runtime validado do Jarvis
 - `missing scope: operator.write` → scopes errados; usar os 4 acima
 
 ### Enviando mensagens ao agente
@@ -152,7 +154,7 @@ browser, navigate, screenshot → Browser / Navegando...
 | Texto duplicado no streaming | OpenClaw envia texto cumulativo, estava fazendo append | Replace: `[...prev.slice(0,-1), {...last, text: msg.text}]` |
 | Balão fora da cabeça do personagem | `containerRef` cobria área incluindo 380px do chat | Chat virou overlay, `containerRef` = canvas completo |
 | Tool bubble presa após agente terminar | `lifecycle: end` não limpava tools ativas | Adicionar `agentToolsClear` antes de `agentStatus: idle` |
-| `EADDRINUSE: 3002` | Processo anterior não encerrado | `lsof -ti:3002 \| xargs kill -9` |
+| `EADDRINUSE: 3000` | Processo anterior não encerrado | `lsof -ti:3000 \| xargs kill -9` |
 
 ---
 
@@ -183,11 +185,11 @@ Com multi-session, precisará de alguma forma de identificar de qual agente veio
 
 ```bash
 # Rodar o projeto
-npm run dev          # frontend Vite (porta 5173)
-node server.js       # backend proxy (portas 3000 + 3002)
+npm run dev          # frontend Vite (porta 8090)
+node server.js       # backend proxy (porta 3000, incluindo /ws)
 
-# Se porta 3002 estiver em uso
-lsof -ti:3002 | xargs kill -9
+# Se porta 3000 estiver em uso
+lsof -ti:3000 | xargs kill -9
 
 # Aprovar device no OpenClaw (VPS)
 openclaw devices list
@@ -197,6 +199,8 @@ openclaw devices approve <deviceId>
 OPENCLAW_URL=http://185.205.244.235:18789
 OPENCLAW_TOKEN=admin-token-123
 OPENCLAW_IDENTITY_PATH=~/.pixel-office-identity.json
+# Em container Linux no Jarvis, o valor que funcionou foi:
+# OPENCLAW_URL=http://172.17.0.1:18789
 ```
 
 ---

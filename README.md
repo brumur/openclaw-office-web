@@ -21,7 +21,7 @@ A pixel-art office in your browser where animated characters represent real AI a
 
 ```
 Browser (React + Canvas)
-    ↕  WebSocket  ws://localhost:3002
+    ↕  HTTP + WebSocket  http://localhost:3000 + /ws
 server.js  (Node / Express)
     ↕  WebSocket  ws://<your-openclaw-host>
 OpenClaw gateway  (your VPS)
@@ -29,9 +29,9 @@ OpenClaw gateway  (your VPS)
 
 | Port | Service |
 |------|---------|
-| 5173 | Vite dev server (frontend) |
-| 3000 | Express HTTP (`/api/spawn-agent`) |
-| 3002 | WebSocket bridge (browser ↔ backend) |
+| 8090 | Vite dev server (frontend, dev only) |
+| 3000 | `server.js` serving HTTP API + `/ws` |
+| 7080 | Jarvis host publish → app/container `3000` |
 
 See [`docs/architecture.md`](docs/architecture.md) for a deeper breakdown.
 
@@ -58,15 +58,21 @@ npm install
 Create a `.env` file in the project root, or just export the variables:
 
 ```bash
-OPENCLAW_URL=http://your-vps:18789
+OPENCLAW_URL=http://your-openclaw-host:18789
 OPENCLAW_TOKEN=your-admin-token
 ```
 
-Defaults are `http://185.205.244.235:18789` and `admin-token-123` (change these for production).
+Important runtime note from the Jarvis deploy: inside a Linux container, `host.docker.internal` failed with `ENOTFOUND`. The working value was:
+
+```bash
+OPENCLAW_URL=http://172.17.0.1:18789
+```
+
+Defaults in the code are still `http://185.205.244.235:18789` and `admin-token-123`, but treat those only as local defaults.
 
 ### 3. Approve the device on first run
 
-On first start the backend generates an Ed25519 key pair stored at `~/.pixel-office-identity.json` and attempts to connect. The device will be in `PAIRING_REQUIRED` state until approved on the server:
+On first start the backend generates an Ed25519 key pair stored at `~/.pixel-office-identity.json` and attempts to connect. Once network access is correct, the next expected blocker is `PAIRING_REQUIRED` / `not-paired` until the device is approved on the server:
 
 ```bash
 # On your VPS
@@ -74,7 +80,7 @@ openclaw devices list
 openclaw devices approve <deviceId>
 ```
 
-You only need to do this once per machine.
+You only need to do this once per machine **as long as the identity file persists**. If a redeploy/container rebuild loses `~/.pixel-office-identity.json` (or your custom `OPENCLAW_IDENTITY_PATH`), a new device is generated and OpenClaw may require approval again.
 
 ### 4. Run
 
@@ -88,7 +94,9 @@ node server.js
 npm run dev
 ```
 
-Open `http://localhost:5173`.
+Open `http://localhost:8090` in dev.
+
+For the Jarvis runtime that was validated in practice, the app is exposed on `http://<jarvis-host>:7080` and forwarded to container/app port `3000`.
 
 ---
 
@@ -136,6 +144,7 @@ pixel-office-web/
 | [`docs/openclaw-protocol.md`](docs/openclaw-protocol.md) | WebSocket protocol, auth, all event types |
 | [`docs/frontend.md`](docs/frontend.md) | React components, hooks, canvas rendering |
 | [`docs/development.md`](docs/development.md) | Dev workflow, debugging, common issues |
+| [`docs/deploy-runtime.md`](docs/deploy-runtime.md) | Real deploy/runtime notes from Jarvis, including Linux container networking and pairing |
 | [`AGENTS.md`](AGENTS.md) | Bugs fixed, decisions, pending work |
 
 ---

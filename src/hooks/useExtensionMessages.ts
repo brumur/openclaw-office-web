@@ -87,6 +87,7 @@ export function useExtensionMessages(
   const [loadedAssets, setLoadedAssets] = useState<
     { catalog: FurnitureAsset[]; sprites: Record<string, string[][]> } | undefined
   >();
+  const [, setWorkspaceFolders] = useState<WorkspaceFolder[]>([]);
   const [alwaysShowLabels, setAlwaysShowLabels] = useState(false);
 
   // Track whether initial layout has been loaded (ref to avoid re-render)
@@ -387,7 +388,8 @@ export function useExtensionMessages(
         console.log(`[Webview] Received ${sets.length} wall tile set(s)`);
         setWallSprites(sets);
       } else if (msg.type === 'workspaceFolders') {
-        // no-op: workspace folders not used in this build
+        const folders = msg.folders as WorkspaceFolder[];
+        setWorkspaceFolders(folders);
       } else if (msg.type === 'settingsLoaded') {
         const soundOn = msg.soundEnabled as boolean;
         setSoundEnabled(soundOn);

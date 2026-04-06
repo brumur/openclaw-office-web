@@ -15,10 +15,11 @@ Bootstraps the app. In browser mode, calls `initBrowserMock()` before `createRoo
 **Browser-only.** Responsible for:
 1. Fetching and decoding all PNG sprite assets
 2. Dispatching the initial `postMessage` events that the game engine needs (characters, floors, walls, furniture, layout, settings)
-3. Establishing the WebSocket connection to `server.js` (port 3002)
-4. Forwarding WS messages into the message bus via `window.dispatchEvent`
-5. Auto-reconnecting every 5s on disconnect
-6. Dispatching `wsConnectionStatus` events (connecting / connected / disconnected)
+3. Checking `/api/auth/check` before opening the WebSocket
+4. Establishing the WebSocket connection to `server.js` on the same host via `/ws`
+5. Forwarding WS messages into the message bus via `window.dispatchEvent`
+6. Auto-reconnecting every 5s on disconnect
+7. Dispatching `wsConnectionStatus` events (connecting / connected / disconnected)
 
 Asset loading has two modes:
 - **Dev mode** — tries `assets/decoded/*.json` first (pre-decoded, fast). Vite middleware generates these.
@@ -60,6 +61,7 @@ Features:
 - Banner when offline/connecting
 - Input disabled + placeholder change when not connected
 - Auto-scroll to bottom on new messages
+- Safe fallback color/name when no chat tab is selected yet
 
 ### `src/office/components/OfficeCanvas.tsx`
 
@@ -85,6 +87,8 @@ The main event processor. Listens to `window.addEventListener('message')` and ma
 - `agentStatuses` — `Record<agentId, 'idle' | 'active'>`
 - `subagentCharacters` / `subagentTools` — for nested agents
 - `layoutReady`, `loadedAssets`, `workspaceFolders` etc.
+
+Residents are handled specially: fixed agents can appear immediately even while the OpenClaw bridge is still connecting, because the backend now emits them independently from OpenClaw readiness.
 
 Also handles: character sprite loading, floor/wall tile loading, furniture catalog, layout loading/saving, sound, settings.
 

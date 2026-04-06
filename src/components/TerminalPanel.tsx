@@ -45,7 +45,7 @@ export function TerminalPanel({
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const dot = STATUS_DOT[wsStatus];
   const activeTab = agentTabs.find((t) => t.id === selectedChatAgentId);
-  const activeColor = activeTab?.color ?? (selectedChatAgentId !== null ? agentColor(selectedChatAgentId) : '#64748b');
+  const activeColor = activeTab?.color ?? agentColor(selectedChatAgentId ?? 1);
   const activeName = activeTab?.name ?? 'OpenClaw';
 
   useEffect(() => {

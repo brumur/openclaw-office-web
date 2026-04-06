@@ -274,7 +274,6 @@ export function dispatchMockMessages(): void {
     (window as any).__pixel_ws_connected = true;
 
     async function connectWs() {
-      // Guard: only open WebSocket after a valid session exists
       try {
         const auth = await fetch('/api/auth/check', { credentials: 'include' }).then((r) => r.json());
         if (!auth?.ok) {
