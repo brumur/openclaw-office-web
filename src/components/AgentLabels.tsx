@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 
+import { agentColor } from '../agentColors.js';
 import type { SubagentCharacter } from '../hooks/useExtensionMessages.js';
 import type { OfficeState } from '../office/engine/officeState.js';
 import { CharacterState, TILE_SIZE } from '../office/types.js';
@@ -72,14 +73,16 @@ export function AgentLabels({
         const isActive = ch.isActive;
         const isSub = ch.isSubagent;
 
+        const color = agentColor(id);
         let dotColor = 'transparent';
         if (isWaiting) {
-          dotColor = 'var(--vscode-charts-yellow, #cca700)';
+          dotColor = '#facc15';
         } else if (isActive) {
-          dotColor = 'var(--vscode-charts-blue, #3794ff)';
+          dotColor = color;
         }
 
         const labelText = subLabelMap.get(id) || ch.folderName || `Agent #${id}`;
+        const sessionKeyText = !ch.isSubagent ? ch.sessionKey : undefined;
 
         return (
           <div
@@ -124,6 +127,20 @@ export function AgentLabels({
             >
               {labelText}
             </span>
+            {sessionKeyText && (
+              <span
+                style={{
+                  fontSize: '13px',
+                  color: 'var(--pixel-text-dim)',
+                  background: 'rgba(30,30,46,0.7)',
+                  padding: '0px 4px',
+                  borderRadius: 2,
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {sessionKeyText}
+              </span>
+            )}
           </div>
         );
       })}

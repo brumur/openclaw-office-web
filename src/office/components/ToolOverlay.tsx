@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 
+import { agentColor } from '../../agentColors.js';
 import { CHARACTER_SITTING_OFFSET_PX, TOOL_OVERLAY_VERTICAL_OFFSET } from '../../constants.js';
 import type { SubagentCharacter } from '../../hooks/useExtensionMessages.js';
 import type { OfficeState } from '../engine/officeState.js';
@@ -126,11 +127,12 @@ export function ToolOverlay({
         const isIdle = activityText === 'Idle' && !hasPermission;
         if (isIdle && !isSelected && !isHovered) return null;
 
+        const color = agentColor(isSub ? (officeState.subagentMeta.get(id)?.parentAgentId ?? id) : id);
         let dotColor: string | null = null;
         if (hasPermission) {
-          dotColor = 'var(--pixel-status-permission)';
+          dotColor = '#facc15';
         } else if (isActive && hasActiveTools) {
-          dotColor = 'var(--pixel-status-active)';
+          dotColor = color;
         }
 
         return (
@@ -190,7 +192,7 @@ export function ToolOverlay({
                 >
                   {activityText}
                 </span>
-                {ch.folderName && (
+                {ch.sessionKey && (
                   <span
                     style={{
                       fontSize: '16px',
@@ -200,7 +202,7 @@ export function ToolOverlay({
                       display: 'block',
                     }}
                   >
-                    {ch.folderName}
+                    {ch.sessionKey}
                   </span>
                 )}
               </div>

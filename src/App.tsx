@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { agentColor } from './agentColors.js';
 import { toMajorMinor } from './changelogData.js';
 import { BottomToolbar } from './components/BottomToolbar.js';
 import { ChangelogModal } from './components/ChangelogModal.js';
@@ -149,8 +150,13 @@ function loadStoredMessages(): Record<number, ChatMessage[]> {
 function App() {
   const [messagesByAgent, setMessagesByAgent] = useState<Record<number, ChatMessage[]>>(loadStoredMessages);
   const [selectedChatAgentId, setSelectedChatAgentId] = useState<number>(1);
+  const [unreadByAgent, setUnreadByAgent] = useState<Record<number, number>>({});
   const [isTerminalOpen, setIsTerminalOpen] = useState(true);
   const [wsStatus, setWsStatus] = useState<WsStatus>('connecting');
+
+  // Keep a ref so the message handler always sees the current selected agent
+  const selectedChatAgentIdRef = useRef(selectedChatAgentId);
+  useEffect(() => { selectedChatAgentIdRef.current = selectedChatAgentId; }, [selectedChatAgentId]);
 
   useEffect(() => {
     const allStreaming = Object.values(messagesByAgent).some((msgs) => msgs.some((m) => m.streaming));
@@ -174,6 +180,10 @@ function App() {
             : [...agentMsgs, { role: 'assistant' as const, text: msg.text, streaming: true }];
           return { ...prev, [agentId]: updated };
         });
+        // Increment unread counter if this agent is not the one currently in focus
+        if (agentId !== selectedChatAgentIdRef.current) {
+          setUnreadByAgent((prev) => ({ ...prev, [agentId]: (prev[agentId] ?? 0) + 1 }));
+        }
       }
       if (msg?.type === 'wsConnectionStatus') {
         setWsStatus(msg.status as WsStatus);
@@ -299,16 +309,20 @@ function App() {
     vscode.postMessage({ type: 'closeAgent', id });
   }, []);
 
+  const handleSelectChatAgent = useCallback((id: number) => {
+    setSelectedChatAgentId(id);
+    setUnreadByAgent((prev) => ({ ...prev, [id]: 0 }));
+    setIsTerminalOpen(true);
+  }, []);
+
   const handleClick = useCallback((agentId: number) => {
     // If clicked agent is a sub-agent, focus the parent's terminal instead
     const os = getOfficeState();
     const meta = os.subagentMeta.get(agentId);
     const focusId = meta ? meta.parentAgentId : agentId;
     vscode.postMessage({ type: 'focusAgent', id: focusId });
-    setSelectedChatAgentId(focusId);
-    // Reopen chat panel with preserved context
-    setIsTerminalOpen(true);
-  }, []);
+    handleSelectChatAgent(focusId);
+  }, [handleSelectChatAgent]);
 
   const officeState = getOfficeState();
 
@@ -353,11 +367,20 @@ function App() {
 
   const chatOpen = isTerminalOpen && agents.length > 0 && !isDebugMode;
 
+  // Build agent tab descriptors for the chat tab bar
+  const agentTabs = agents.map((id) => {
+    const ch = officeState.characters.get(id);
+    return {
+      id,
+      name: ch?.folderName ?? `Agent #${id}`,
+      color: agentColor(id),
+      unread: unreadByAgent[id] ?? 0,
+    };
+  });
+
   return (
-    <div
-      ref={containerRef}
-      style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}
-    >
+    // Outer wrapper: flex row so the chat panel pushes the canvas
+    <div style={{ display: 'flex', width: '100%', height: '100%', overflow: 'hidden', position: 'relative' }}>
       <style>{`
         @keyframes pixel-agents-pulse {
           0%, 100% { opacity: 1; }
@@ -367,8 +390,8 @@ function App() {
         .pixel-agents-migration-btn:hover { filter: brightness(0.8); }
       `}</style>
 
-      {/* Game area — always full size, chat overlays on top */}
-      <div style={{ position: 'absolute', inset: 0 }}>
+      {/* Game area — fills remaining space after chat panel */}
+      <div ref={containerRef} style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
         <OfficeCanvas
           officeState={officeState}
           onClick={handleClick}
@@ -516,20 +539,18 @@ function App() {
         )}
       </div>
 
-      {/* Chat panel — overlay on the right, canvas stays full size */}
-      {chatOpen && (() => {
-        const ch = officeState.characters.get(selectedChatAgentId);
-        return (
-          <TerminalPanel
-            messages={messagesByAgent[selectedChatAgentId] ?? []}
-            onSend={handleSendInput}
-            onClose={() => setIsTerminalOpen(false)}
-            wsStatus={wsStatus}
-            agentName={ch?.folderName}
-            agentSessionKey={ch?.sessionKey}
-          />
-        );
-      })()}
+      {/* Chat panel — flex sibling, pushes canvas to the left */}
+      {chatOpen && (
+        <TerminalPanel
+          messages={messagesByAgent[selectedChatAgentId] ?? []}
+          onSend={handleSendInput}
+          onClose={() => setIsTerminalOpen(false)}
+          wsStatus={wsStatus}
+          agentTabs={agentTabs}
+          selectedChatAgentId={selectedChatAgentId}
+          onSelectAgent={handleSelectChatAgent}
+        />
+      )}
 
       {showMigrationNotice && (
         <div

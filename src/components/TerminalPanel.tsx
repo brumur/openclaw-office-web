@@ -1,41 +1,64 @@
 import { marked } from 'marked';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import { agentColor } from '../agentColors.js';
 import type { ChatMessage, WsStatus } from '../App.js';
 
 marked.setOptions({ breaks: true, gfm: true });
+
+export interface AgentTab {
+  id: number;
+  name: string;
+  color: string;
+  unread: number;
+}
 
 interface TerminalPanelProps {
   messages: ChatMessage[];
   onSend: (text: string) => void;
   onClose: () => void;
   wsStatus: WsStatus;
-  agentName?: string;
-  agentSessionKey?: string;
+  agentTabs: AgentTab[];
+  selectedChatAgentId: number;
+  onSelectAgent: (id: number) => void;
 }
 
 const STATUS_DOT: Record<WsStatus, { color: string; title: string; pulse: boolean }> = {
-  connected:    { color: '#4ade80', title: 'Conectado',   pulse: false },
-  connecting:   { color: '#facc15', title: 'Conectando…', pulse: true  },
+  connected:    { color: '#4ade80', title: 'Conectado',    pulse: false },
+  connecting:   { color: '#facc15', title: 'Conectando…',  pulse: true  },
   disconnected: { color: '#f87171', title: 'Desconectado', pulse: false },
 };
 
-export function TerminalPanel({ messages, onSend, onClose, wsStatus, agentName, agentSessionKey }: TerminalPanelProps) {
+export function TerminalPanel({
+  messages,
+  onSend,
+  onClose,
+  wsStatus,
+  agentTabs,
+  selectedChatAgentId,
+  onSelectAgent,
+}: TerminalPanelProps) {
   const [input, setInput] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const dot = STATUS_DOT[wsStatus];
+  const activeTab = agentTabs.find((t) => t.id === selectedChatAgentId);
+  const activeColor = activeTab?.color ?? agentColor(selectedChatAgentId);
+  const activeName = activeTab?.name ?? 'OpenClaw';
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSubmit = (e?: React.FormEvent) => {
-    e?.preventDefault();
+  const handleSubmit = () => {
     const trimmed = input.trim();
     if (trimmed) {
       onSend(trimmed);
       setInput('');
+      // Reset textarea height
+      if (inputRef.current) {
+        inputRef.current.style.height = 'auto';
+      }
     }
   };
 
@@ -49,17 +72,15 @@ export function TerminalPanel({ messages, onSend, onClose, wsStatus, agentName, 
   return (
     <div
       style={{
-        position: 'absolute',
-        top: 0,
-        right: 0,
         width: 380,
         height: '100%',
-        background: 'rgba(10, 10, 18, 0.96)',
-        borderLeft: '2px solid var(--pixel-border)',
+        flexShrink: 0,
+        background: 'rgba(10, 10, 18, 0.97)',
+        borderLeft: `2px solid ${activeColor}44`,
         display: 'flex',
         flexDirection: 'column',
-        zIndex: 60,
-        boxShadow: '-4px 0 24px rgba(0,0,0,0.5)',
+        boxShadow: `-4px 0 24px rgba(0,0,0,0.5), inset 1px 0 0 ${activeColor}22`,
+        transition: 'border-color 0.2s',
       }}
     >
       {/* Header */}
@@ -69,22 +90,36 @@ export function TerminalPanel({ messages, onSend, onClose, wsStatus, agentName, 
           alignItems: 'center',
           justifyContent: 'space-between',
           padding: '10px 14px',
-          borderBottom: '2px solid var(--pixel-border)',
-          background: 'rgba(0,0,0,0.4)',
+          borderBottom: '1px solid var(--pixel-border)',
+          background: 'rgba(0,0,0,0.3)',
           flexShrink: 0,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-          <span style={{ fontSize: 18, lineHeight: 1, flexShrink: 0 }}>🦞</span>
-          <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-            <span style={{ color: 'var(--pixel-accent)', fontSize: 20, fontFamily: 'monospace', fontWeight: 'bold', letterSpacing: 1, lineHeight: 1.2 }}>
-              {agentName ?? 'OpenClaw'}
-            </span>
-            {agentSessionKey && (
-              <span style={{ color: 'var(--pixel-text-dim)', fontSize: 12, fontFamily: 'monospace', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {agentSessionKey}
-              </span>
-            )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+          {/* Colored avatar circle */}
+          <div
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: '50%',
+              background: activeColor,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 14,
+              fontWeight: 'bold',
+              color: '#fff',
+              flexShrink: 0,
+              boxShadow: `0 0 8px ${activeColor}66`,
+              fontFamily: 'monospace',
+            }}
+          >
+            {activeName.charAt(0).toUpperCase()}
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ color: activeColor, fontSize: 18, fontFamily: 'monospace', fontWeight: 'bold', lineHeight: 1.2 }}>
+              {activeName}
+            </div>
           </div>
           <span
             title={dot.title}
@@ -109,11 +144,75 @@ export function TerminalPanel({ messages, onSend, onClose, wsStatus, agentName, 
             fontSize: 14,
             padding: '2px 8px',
             fontFamily: 'monospace',
+            flexShrink: 0,
           }}
         >
           ✕
         </button>
       </div>
+
+      {/* Tab bar */}
+      {agentTabs.length > 1 && (
+        <div
+          style={{
+            display: 'flex',
+            borderBottom: '1px solid var(--pixel-border)',
+            background: 'rgba(0,0,0,0.2)',
+            overflowX: 'auto',
+            flexShrink: 0,
+            scrollbarWidth: 'none',
+          }}
+        >
+          {agentTabs.map((tab) => {
+            const isActive = tab.id === selectedChatAgentId;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => onSelectAgent(tab.id)}
+                style={{
+                  position: 'relative',
+                  background: isActive ? `${tab.color}18` : 'transparent',
+                  border: 'none',
+                  borderBottom: isActive ? `2px solid ${tab.color}` : '2px solid transparent',
+                  color: isActive ? tab.color : 'var(--pixel-text-dim)',
+                  cursor: 'pointer',
+                  padding: '7px 14px',
+                  fontSize: 14,
+                  fontFamily: 'monospace',
+                  fontWeight: isActive ? 'bold' : 'normal',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                  transition: 'color 0.15s, border-color 0.15s, background 0.15s',
+                }}
+              >
+                {tab.name}
+                {tab.unread > 0 && (
+                  <span
+                    style={{
+                      position: 'absolute',
+                      top: 4,
+                      right: 4,
+                      background: '#f87171',
+                      color: '#fff',
+                      fontSize: 10,
+                      fontFamily: 'monospace',
+                      borderRadius: '50%',
+                      width: 16,
+                      height: 16,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      lineHeight: 1,
+                    }}
+                  >
+                    {tab.unread > 9 ? '9+' : tab.unread}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Messages */}
       <div
@@ -153,7 +252,7 @@ export function TerminalPanel({ messages, onSend, onClose, wsStatus, agentName, 
             marginTop: 40,
             opacity: 0.5,
           }}>
-            Fale com o agente...
+            Fale com {activeName}...
           </div>
         )}
 
@@ -161,7 +260,7 @@ export function TerminalPanel({ messages, onSend, onClose, wsStatus, agentName, 
           msg.role === 'user' ? (
             <UserBubble key={i} text={msg.text} />
           ) : (
-            <AssistantBubble key={i} text={msg.text} streaming={msg.streaming} />
+            <AssistantBubble key={i} text={msg.text} streaming={msg.streaming} agentColor={activeColor} agentInitial={activeName.charAt(0).toUpperCase()} />
           )
         )}
         <div ref={bottomRef} />
@@ -171,8 +270,8 @@ export function TerminalPanel({ messages, onSend, onClose, wsStatus, agentName, 
       <div
         style={{
           display: 'flex',
-          borderTop: '2px solid var(--pixel-border)',
-          background: 'rgba(0,0,0,0.5)',
+          borderTop: '1px solid var(--pixel-border)',
+          background: 'rgba(0,0,0,0.4)',
           flexShrink: 0,
           alignItems: 'flex-end',
         }}
@@ -182,7 +281,7 @@ export function TerminalPanel({ messages, onSend, onClose, wsStatus, agentName, 
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={wsStatus === 'connected' ? 'Mensagem… (Shift+Enter para nova linha)' : 'Aguardando conexão...'}
+          placeholder={wsStatus === 'connected' ? `Mensagem para ${activeName}… (Shift+Enter nova linha)` : 'Aguardando conexão...'}
           disabled={wsStatus !== 'connected'}
           autoFocus
           rows={1}
@@ -192,7 +291,7 @@ export function TerminalPanel({ messages, onSend, onClose, wsStatus, agentName, 
             border: 'none',
             color: 'var(--pixel-text)',
             outline: 'none',
-            fontSize: 16,
+            fontSize: 15,
             fontFamily: 'monospace',
             padding: '10px 12px',
             resize: 'none',
@@ -207,11 +306,11 @@ export function TerminalPanel({ messages, onSend, onClose, wsStatus, agentName, 
           }}
         />
         <button
-          onClick={() => handleSubmit()}
+          onClick={handleSubmit}
           style={{
-            background: input.trim() ? 'var(--pixel-accent)' : 'transparent',
+            background: input.trim() ? activeColor : 'transparent',
             border: 'none',
-            borderLeft: '2px solid var(--pixel-border)',
+            borderLeft: '1px solid var(--pixel-border)',
             color: input.trim() ? '#fff' : 'var(--pixel-text-dim)',
             cursor: input.trim() ? 'pointer' : 'default',
             padding: '0 16px',
@@ -233,16 +332,16 @@ function UserBubble({ text }: { text: string }) {
     <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
       <div
         style={{
-          background: 'var(--pixel-accent)',
-          color: '#fff',
+          background: 'rgba(255,255,255,0.1)',
+          border: '1px solid rgba(255,255,255,0.15)',
+          color: 'var(--pixel-text)',
           padding: '8px 12px',
           maxWidth: '80%',
-          fontSize: 16,
+          fontSize: 15,
           fontFamily: 'monospace',
           lineHeight: 1.5,
           borderRadius: '12px 12px 2px 12px',
           wordBreak: 'break-word',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
         }}
       >
         {text}
@@ -251,40 +350,54 @@ function UserBubble({ text }: { text: string }) {
   );
 }
 
-function AssistantBubble({ text, streaming }: { text: string; streaming?: boolean }) {
+function AssistantBubble({
+  text,
+  streaming,
+  agentColor: color,
+  agentInitial,
+}: {
+  text: string;
+  streaming?: boolean;
+  agentColor: string;
+  agentInitial: string;
+}) {
   const html = useMemo(() => marked.parse(text) as string, [text]);
 
   return (
     <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+      {/* Colored avatar with agent initial */}
       <div
         style={{
-          width: 28,
-          height: 28,
-          background: 'var(--pixel-border)',
+          width: 26,
+          height: 26,
           borderRadius: '50%',
+          background: color,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          fontSize: 14,
+          fontSize: 12,
+          fontWeight: 'bold',
+          color: '#fff',
           flexShrink: 0,
           marginTop: 2,
+          fontFamily: 'monospace',
+          boxShadow: `0 0 6px ${color}44`,
         }}
       >
-        🦞
+        {agentInitial}
       </div>
       <div
         style={{
-          background: 'rgba(255,255,255,0.06)',
-          border: '1px solid var(--pixel-border)',
+          background: 'rgba(255,255,255,0.05)',
+          border: `1px solid ${color}33`,
           color: 'var(--pixel-text)',
           padding: '8px 12px',
-          maxWidth: 'calc(100% - 40px)',
-          fontSize: 16,
+          maxWidth: 'calc(100% - 38px)',
+          fontSize: 15,
           fontFamily: 'monospace',
           lineHeight: 1.6,
           borderRadius: '2px 12px 12px 12px',
           wordBreak: 'break-word',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
         }}
       >
         <div
@@ -298,7 +411,7 @@ function AssistantBubble({ text, streaming }: { text: string; streaming?: boolea
               display: 'inline-block',
               width: 8,
               height: 14,
-              background: 'var(--pixel-accent)',
+              background: color,
               marginLeft: 3,
               verticalAlign: 'middle',
               animation: 'pixel-agents-pulse 0.8s ease-in-out infinite',
