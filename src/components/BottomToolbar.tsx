@@ -76,7 +76,7 @@ export function BottomToolbar({
         }}
         title="Open chat"
       >
-        🦞 Chat
+        Chat
       </button>
 
       {/* Layout editor */}

@@ -730,7 +730,11 @@ export function OfficeCanvas({
         officeState.selectedAgentId = null;
         officeState.cameraFollowId = null;
         onDeselect?.();
+        return;
       }
+
+      // Clicked empty space with no canvas selection — still notify chat to deselect
+      onDeselect?.();
     },
     [officeState, onClick, onDeselect, screenToWorld, screenToTile, isEditMode],
   );
