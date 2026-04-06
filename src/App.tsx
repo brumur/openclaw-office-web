@@ -137,7 +137,9 @@ function loadStoredMessages(): Record<number, ChatMessage[]> {
     const parsed = JSON.parse(raw) as Record<string, ChatMessage[]>;
     const result: Record<number, ChatMessage[]> = {};
     for (const [k, v] of Object.entries(parsed)) {
-      result[Number(k)] = v.map((m) => ({ ...m, streaming: false }));
+      // Only restore user messages — assistant messages always replay from OpenClaw on connect,
+      // so loading them from localStorage would create duplicates.
+      result[Number(k)] = v.filter((m) => m.role === 'user').map((m) => ({ ...m, streaming: false }));
     }
     return result;
   } catch {
