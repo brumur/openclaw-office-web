@@ -274,7 +274,10 @@ export function dispatchMockMessages(): void {
     (window as any).__pixel_ws_connected = true;
 
     function connectWs() {
-      const ws = new WebSocket('ws://localhost:3002');
+      const wsProto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      // In dev, Vite proxies /ws → localhost:3000/ws. In production, same host/port.
+      const wsUrl = `${wsProto}//${window.location.host}/ws`;
+      const ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {
         dispatch({ type: 'wsConnectionStatus', status: 'connected' });

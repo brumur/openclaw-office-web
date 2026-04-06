@@ -1,0 +1,13 @@
+services:
+  pixel-office:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      PIXEL_USER: ${PIXEL_USER:-admin}
+      PIXEL_PASS: ${PIXEL_PASS:?PIXEL_PASS is required}
+      OPENCLAW_TOKEN: ${OPENCLAW_TOKEN:?OPENCLAW_TOKEN is required}
+      OPENCLAW_URL: ${OPENCLAW_URL:-http://185.205.244.235:18789}

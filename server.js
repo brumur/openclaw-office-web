@@ -6,6 +6,9 @@ import http from 'http';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
@@ -106,14 +109,14 @@ function buildDeviceAuthPayloadV3({ deviceId, clientId, clientMode, role, scopes
 const app = express();
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
-const port = 3000;
+const port = parseInt(process.env.PORT ?? '3000', 10);
 
+// Single HTTP server — handles both REST and WebSocket (/ws path)
+const httpServer = http.createServer(app);
 const wss = new WebSocketServer({ noServer: true });
-let clients = [];
 
-// Separate HTTP server for WebSocket (port 3002) — validates session cookie on upgrade
-const wsHttpServer = http.createServer();
-wsHttpServer.on('upgrade', (req, socket, head) => {
+httpServer.on('upgrade', (req, socket, head) => {
+  if (req.url !== '/ws') { socket.destroy(); return; }
   if (!isValidSession(req.headers.cookie)) {
     socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
     socket.destroy();
@@ -121,6 +124,8 @@ wsHttpServer.on('upgrade', (req, socket, head) => {
   }
   wss.handleUpgrade(req, socket, head, (ws) => wss.emit('connection', ws, req));
 });
+
+let clients = [];
 let currentAgentId = 1;
 
 // ── Resident session definitions ──────────────────────────────────────────────
@@ -465,10 +470,19 @@ app.post('/api/spawn-agent', authMiddleware, (_req, res) => {
   res.json({ success: true, agentId });
 });
 
-app.listen(port, () => {
-  console.log(`Proxy Backend running on http://localhost:${port}`);
-});
+// ── Static files (production) ─────────────────────────────────────────────────
 
-wsHttpServer.listen(3002, () => {
-  console.log(`WebSocket running on ws://localhost:3002`);
+if (process.env.NODE_ENV === 'production') {
+  const distDir = path.join(__dirname, 'dist');
+  app.use(express.static(distDir));
+  // SPA fallback — any non-API route serves index.html
+  app.get('*', (req, res) => {
+    if (req.path.startsWith('/api/')) return res.status(404).json({ error: 'Not found' });
+    res.sendFile(path.join(distDir, 'index.html'));
+  });
+}
+
+httpServer.listen(port, () => {
+  console.log(`Pixel Office running on http://localhost:${port}`);
+  console.log(`WebSocket on ws://localhost:${port}/ws`);
 });
