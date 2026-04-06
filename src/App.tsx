@@ -137,9 +137,7 @@ function loadStoredMessages(): Record<number, ChatMessage[]> {
     const parsed = JSON.parse(raw) as Record<string, ChatMessage[]>;
     const result: Record<number, ChatMessage[]> = {};
     for (const [k, v] of Object.entries(parsed)) {
-      // Only restore user messages — assistant messages always replay from OpenClaw on connect,
-      // so loading them from localStorage would create duplicates.
-      result[Number(k)] = v.filter((m) => m.role === 'user').map((m) => ({ ...m, streaming: false }));
+      result[Number(k)] = v.map((m) => ({ ...m, streaming: false }));
     }
     return result;
   } catch {
@@ -174,6 +172,11 @@ function App() {
   const selectedChatAgentIdRef = useRef(selectedChatAgentId);
   useEffect(() => { selectedChatAgentIdRef.current = selectedChatAgentId; }, [selectedChatAgentId]);
 
+  // Tracks which agents have had their first agentOutput after (re)connect.
+  // On first output, we clear old assistant messages to prevent OpenClaw replay duplicates
+  // while keeping user messages intact.
+  const replayHandledRef = useRef<Set<number>>(new Set());
+
   useEffect(() => {
     const allStreaming = Object.values(messagesByAgent).some((msgs) => msgs.some((m) => m.streaming));
     if (allStreaming) return; // don't save mid-stream
@@ -189,6 +192,14 @@ function App() {
         const agentId: number = msg.id ?? 1;
         setMessagesByAgent((prev) => {
           const agentMsgs = prev[agentId] ?? [];
+          // First output after (re)connect: clear old assistant messages to prevent
+          // OpenClaw history replay from duplicating what's already in localStorage.
+          // User messages are kept so they survive reconnects.
+          if (!replayHandledRef.current.has(agentId)) {
+            replayHandledRef.current.add(agentId);
+            const userMsgs = agentMsgs.filter((m) => m.role === 'user');
+            return { ...prev, [agentId]: [...userMsgs, { role: 'assistant' as const, text: msg.text, streaming: true }] };
+          }
           const last = agentMsgs[agentMsgs.length - 1];
           const updated = (last?.role === 'assistant' && last.streaming)
             // OpenClaw sends cumulative text per event — replace, don't append
@@ -203,6 +214,10 @@ function App() {
       }
       if (msg?.type === 'wsConnectionStatus') {
         setWsStatus(msg.status as WsStatus);
+        // Reset replay tracking on disconnect so next connect re-deduplicates
+        if (msg.status === 'disconnected' || msg.status === 'connecting') {
+          replayHandledRef.current.clear();
+        }
       }
       if (msg?.type === 'agentStatus' && msg.status === 'idle') {
         const agentId: number = msg.id ?? 1;
