@@ -25,9 +25,9 @@ export function CameraIndicator({ status }: CameraIndicatorProps) {
         gap: 5,
         background: 'rgba(10, 10, 18, 0.72)',
         border: `1px solid ${dim ? 'rgba(255,255,255,0.07)' : dot + '55'}`,
-        padding: '3px 8px 3px 6px',
+        padding: '5px 12px 5px 9px',
         fontFamily: 'monospace',
-        fontSize: 11,
+        fontSize: 14,
         letterSpacing: '0.05em',
         opacity: dim ? 0.35 : 1,
         transition: 'opacity 0.4s, border-color 0.4s',
@@ -36,13 +36,13 @@ export function CameraIndicator({ status }: CameraIndicatorProps) {
       }}
     >
       {/* Camera icon */}
-      <span style={{ fontSize: 13, lineHeight: 1 }}>📷</span>
+      <span style={{ fontSize: 16, lineHeight: 1 }}>📷</span>
 
       {/* Blinking dot */}
       <span
         style={{
-          width: 6,
-          height: 6,
+          width: 8,
+          height: 8,
           borderRadius: '50%',
           background: dot,
           flexShrink: 0,
