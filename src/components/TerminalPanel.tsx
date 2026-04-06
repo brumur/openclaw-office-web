@@ -60,6 +60,10 @@ export function TerminalPanel({
   const activeColor = activeTab?.color ?? agentColor(selectedChatAgentId ?? 1);
   const activeName = activeTab?.name ?? 'OpenClaw';
 
+  // Slide-in animation on mount
+  const [visible, setVisible] = useState(false);
+  useEffect(() => { requestAnimationFrame(() => setVisible(true)); }, []);
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -109,16 +113,22 @@ export function TerminalPanel({
   return (
     <div
       style={{
+        position: 'absolute',
+        top: 0,
+        right: 0,
+        bottom: 0,
         width,
-        height: '100%',
-        flexShrink: 0,
-        background: 'rgba(10, 10, 18, 0.97)',
-        borderLeft: `2px solid ${activeColor}44`,
+        background: 'rgba(10, 10, 22, 0.75)',
+        backdropFilter: 'blur(24px)',
+        WebkitBackdropFilter: 'blur(24px)',
+        borderLeft: `1px solid rgba(255,255,255,0.07)`,
+        borderTop: `1px solid ${activeColor}22`,
         display: 'flex',
         flexDirection: 'column',
-        boxShadow: `-4px 0 24px rgba(0,0,0,0.5), inset 1px 0 0 ${activeColor}22`,
-        transition: 'border-color 0.2s',
-        position: 'relative',
+        boxShadow: `-8px 0 40px rgba(0,0,0,0.6), inset 1px 0 0 ${activeColor}18`,
+        zIndex: 150,
+        transform: visible ? 'translateX(0)' : 'translateX(100%)',
+        transition: 'transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.2s',
       }}
     >
       {/* Drag handle */}
@@ -285,9 +295,12 @@ export function TerminalPanel({
 
       {/* Messages */}
       <div
+        className="pixel-chat-scroll"
         style={{
           flex: 1,
           overflowY: 'auto',
+          scrollbarWidth: 'thin',
+          scrollbarColor: 'rgba(255,255,255,0.1) transparent',
           padding: '12px 10px',
           display: 'flex',
           flexDirection: 'column',

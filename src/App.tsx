@@ -403,8 +403,7 @@ function App() {
   if (!isAuthenticated) return <LoginScreen onLogin={() => setIsAuthenticated(true)} />;
 
   return (
-    // Outer wrapper: flex row so the chat panel pushes the canvas
-    <div style={{ display: 'flex', width: '100%', height: '100%', overflow: 'hidden', position: 'relative' }}>
+    <div style={{ width: '100%', height: '100%', overflow: 'hidden', position: 'relative' }}>
       <style>{`
         @keyframes pixel-agents-pulse {
           0%, 100% { opacity: 1; }
@@ -412,10 +411,14 @@ function App() {
         }
         .pixel-agents-pulse { animation: pixel-agents-pulse ${PULSE_ANIMATION_DURATION_SEC}s ease-in-out infinite; }
         .pixel-agents-migration-btn:hover { filter: brightness(0.8); }
+        .pixel-chat-scroll::-webkit-scrollbar { width: 4px; }
+        .pixel-chat-scroll::-webkit-scrollbar-track { background: transparent; }
+        .pixel-chat-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+        .pixel-chat-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.22); }
       `}</style>
 
-      {/* Game area — fills remaining space after chat panel */}
-      <div ref={containerRef} style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+      {/* Game area — always full size, chat overlays on top */}
+      <div ref={containerRef} style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
         <OfficeCanvas
           officeState={officeState}
           onClick={handleClick}
@@ -555,7 +558,7 @@ function App() {
         )}
       </div>
 
-      {/* Chat panel — flex sibling, pushes canvas to the left */}
+      {/* Chat panel — floating overlay, does not push the canvas */}
       {chatOpen && (
         <TerminalPanel
           messages={selectedChatAgentId !== null ? (messagesByAgent[selectedChatAgentId] ?? []) : []}
