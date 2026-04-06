@@ -1,9 +1,12 @@
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 
 import { agentColor } from '../agentColors.js';
 import type { SubagentCharacter } from '../hooks/useExtensionMessages.js';
 import type { OfficeState } from '../office/engine/officeState.js';
 import { CharacterState, TILE_SIZE } from '../office/types.js';
+
+const CHAR_W = 16; // sprite width in game pixels
+const CHAR_H = 32; // sprite height in game pixels
 
 interface AgentLabelsProps {
   officeState: OfficeState;
@@ -13,6 +16,7 @@ interface AgentLabelsProps {
   zoom: number;
   panRef: React.RefObject<{ x: number; y: number }>;
   subagentCharacters: SubagentCharacter[];
+  selectedChatAgentId?: number;
 }
 
 export function AgentLabels({
@@ -23,6 +27,7 @@ export function AgentLabels({
   zoom,
   panRef,
   subagentCharacters,
+  selectedChatAgentId,
 }: AgentLabelsProps) {
   const [, setTick] = useState(0);
   useEffect(() => {
@@ -84,9 +89,32 @@ export function AgentLabels({
         const labelText = subLabelMap.get(id) || ch.folderName || `Agent #${id}`;
         const sessionKeyText = !ch.isSubagent ? ch.sessionKey : undefined;
 
+        // Selected chat agent ring
+        const isChatSelected = !isSub && selectedChatAgentId === id;
+        const charScreenY = (deviceOffsetY + ch.y * zoom) / dpr;
+        const charW = (CHAR_W * zoom) / dpr;
+        const charH = (CHAR_H * zoom) / dpr;
+        const ringPad = 3;
+
         return (
+          <Fragment key={id}>
+            {isChatSelected && (
+              <div
+                style={{
+                  position: 'absolute',
+                  left: screenX - charW / 2 - ringPad,
+                  top: charScreenY - ringPad,
+                  width: charW + ringPad * 2,
+                  height: charH + ringPad * 2,
+                  border: `2px solid ${color}`,
+                  boxShadow: `0 0 6px 1px ${color}88, inset 0 0 4px 0 ${color}44`,
+                  borderRadius: 2,
+                  pointerEvents: 'none',
+                  zIndex: 35,
+                }}
+              />
+            )}
           <div
-            key={id}
             style={{
               position: 'absolute',
               left: screenX,
@@ -142,6 +170,7 @@ export function AgentLabels({
               </span>
             )}
           </div>
+          </Fragment>
         );
       })}
     </>
