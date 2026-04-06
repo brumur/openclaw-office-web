@@ -281,6 +281,9 @@ export function useExtensionMessages(
           os.showWaitingBubble(id);
           playDoneSound();
         }
+        if (status === 'idle') {
+          playDoneSound();
+        }
       } else if (msg.type === 'agentToolPermission') {
         const id = msg.id as number;
         setAgentTools((prev) => {

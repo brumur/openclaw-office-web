@@ -39,6 +39,7 @@ function getActivityText(
     }
   }
 
+  if (isActive) return 'Thinking...';
   return 'Idle';
 }
 
@@ -120,6 +121,10 @@ export function ToolOverlay({
         const hasPermission = subHasPermission || tools?.some((t) => t.permissionWait && !t.done);
         const hasActiveTools = tools?.some((t) => !t.done);
         const isActive = ch.isActive;
+
+        // Hide bubble when idle and not interacted with
+        const isIdle = activityText === 'Idle' && !hasPermission;
+        if (isIdle && !isSelected && !isHovered) return null;
 
         let dotColor: string | null = null;
         if (hasPermission) {
