@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-import { playDoneSound, setSoundEnabled } from '../notificationSound.js';
+import { playDoneSound, playStartSound, setSoundEnabled } from '../notificationSound.js';
 import type { OfficeState } from '../office/engine/officeState.js';
 import { setFloorSprites } from '../office/floorTiles.js';
 import { buildDynamicCatalog } from '../office/layout/furnitureCatalog.js';
@@ -204,6 +204,8 @@ export function useExtensionMessages(
         const id = msg.id as number;
         const toolId = msg.toolId as string;
         const status = msg.status as string;
+        // Play start sound on the first tool of each turn
+        if (!agentTools[id]?.length) void playStartSound();
         setAgentTools((prev) => {
           const list = prev[id] || [];
           if (list.some((t) => t.toolId === toolId)) return prev;

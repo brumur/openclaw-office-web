@@ -36,6 +36,22 @@ function playNote(ctx: AudioContext, freq: number, startOffset: number): void {
   osc.stop(t + NOTIFICATION_NOTE_DURATION_SEC);
 }
 
+export async function playStartSound(): Promise<void> {
+  if (!soundEnabled) return;
+  try {
+    if (!audioCtx) {
+      audioCtx = new AudioContext();
+    }
+    if (audioCtx.state === 'suspended') {
+      await audioCtx.resume();
+    }
+    // Single soft low note: C4
+    playNote(audioCtx, 261.63, 0);
+  } catch {
+    // Audio may not be available
+  }
+}
+
 export async function playDoneSound(): Promise<void> {
   if (!soundEnabled) return;
   try {
