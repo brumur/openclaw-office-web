@@ -93,9 +93,13 @@ export function ToolOverlay({
         const isSelected = selectedId === id;
         const isHovered = hoveredId === id;
         const isSub = ch.isSubagent;
+        const isActive = ch.isActive;
+        const subHasPermission = isSub && ch.bubbleType === 'permission';
+        const tools = agentTools[id];
+        const hasPermission = subHasPermission || tools?.some((t) => t.permissionWait && !t.done);
 
-        // Only show for hovered or selected agents (unless always-show is on)
-        if (!alwaysShowOverlay && !isSelected && !isHovered) return null;
+        // Show when active/permission, or when hovered/selected, or always-show is on
+        if (!alwaysShowOverlay && !isSelected && !isHovered && !isActive && !hasPermission) return null;
 
         // Position above character
         const sittingOffset = ch.state === CharacterState.TYPE ? CHARACTER_SITTING_OFFSET_PX : 0;
@@ -104,7 +108,6 @@ export function ToolOverlay({
           (deviceOffsetY + (ch.y + sittingOffset - TOOL_OVERLAY_VERTICAL_OFFSET) * zoom) / dpr;
 
         // Get activity text
-        const subHasPermission = isSub && ch.bubbleType === 'permission';
         let activityText: string;
         if (isSub) {
           if (subHasPermission) {
@@ -116,11 +119,6 @@ export function ToolOverlay({
         } else {
           activityText = getActivityText(id, agentTools, ch.isActive);
         }
-
-        // Determine dot color
-        const tools = agentTools[id];
-        const hasPermission = subHasPermission || tools?.some((t) => t.permissionWait && !t.done);
-        const isActive = ch.isActive;
 
         // Hide bubble when idle and not interacted with
         const isIdle = activityText === 'Idle' && !hasPermission;
