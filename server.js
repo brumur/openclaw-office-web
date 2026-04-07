@@ -146,6 +146,13 @@ let nextAgentId = RESIDENTS.length + 1;
 const sessionToAgent = new Map();
 const agentToSession = new Map(); // agentId -> full sessionKey (for chat.send)
 
+// Subagent dot correlation:
+// When an Agent/Task tool fires, push { parentAgentId, parentToolId } to this queue.
+// When a subagent session first appears, associate it with the oldest pending entry.
+const pendingAgentTools = []; // [{ parentAgentId, parentToolId }]
+// sessionKey → { parentAgentId, parentToolId }
+const subagentSessionParent = new Map();
+
 for (const r of RESIDENTS) {
   sessionToAgent.set(r.sessionKey, r.id);
   agentToSession.set(r.id, r.sessionKey);
@@ -284,16 +291,33 @@ function toolUiFor(toolName) {
 
 // ── Real tool event handler (stream: "tool") ─────────────────────────────────
 
-function handleToolEvent(agentId, { phase, name, toolCallId }) {
+function handleToolEvent(agentId, evtSession, { phase, name, toolCallId }) {
   if (!phase || !toolCallId) return;
   const ui = toolUiFor(name);
+  const isAgentTool = ['agent', 'task'].includes((name ?? '').toLowerCase());
 
   if (phase === 'start') {
     console.log(`[Tool] start  ${name} (${toolCallId})`);
     broadcast({ type: 'agentToolStart', id: agentId, toolId: toolCallId, toolName: ui.name, status: ui.status });
+    if (isAgentTool) {
+      pendingAgentTools.push({ parentAgentId: agentId, parentToolId: toolCallId });
+    }
+    // If this session is a subagent, also fire subagentToolStart on the parent's anonymous character
+    const parent = evtSession ? subagentSessionParent.get(evtSession) : null;
+    if (parent) {
+      broadcast({ type: 'subagentToolStart', id: parent.parentAgentId, parentToolId: parent.parentToolId, toolId: toolCallId, toolName: ui.name, status: ui.status });
+    }
   } else if (phase === 'done' || phase === 'error') {
     console.log(`[Tool] ${phase}  ${name} (${toolCallId})`);
     broadcast({ type: 'agentToolDone', id: agentId, toolId: toolCallId });
+    if (isAgentTool) {
+      const idx = pendingAgentTools.findIndex(p => p.parentAgentId === agentId && p.parentToolId === toolCallId);
+      if (idx !== -1) pendingAgentTools.splice(idx, 1);
+    }
+    const parent = evtSession ? subagentSessionParent.get(evtSession) : null;
+    if (parent) {
+      broadcast({ type: 'subagentToolDone', id: parent.parentAgentId, parentToolId: parent.parentToolId, toolId: toolCallId });
+    }
   }
 }
 
@@ -395,6 +419,11 @@ function connectToOpenClaw() {
             broadcast({ type: 'agentStatus', id: newId, status: 'idle' });
             console.log(`[Session] New session "${evtSession}" (label: ${label}) → agentId=${newId}`);
           }
+          // Associate subagent session with oldest pending Agent/Task tool call
+          if (isSubagentSession(evtSession) && pendingAgentTools.length > 0) {
+            subagentSessionParent.set(evtSession, { ...pendingAgentTools[0] });
+            console.log(`[Subagent] "${evtSession}" → parent agentId=${pendingAgentTools[0].parentAgentId} toolId=${pendingAgentTools[0].parentToolId}`);
+          }
         }
         agentId = sessionToAgent.get(evtSession);
         currentAgentId = agentId; // keep currentAgentId in sync for fallback
@@ -406,7 +435,7 @@ function connectToOpenClaw() {
       }
 
       if (stream === 'tool') {
-        handleToolEvent(agentId, d ?? {});
+        handleToolEvent(agentId, evtSession, d ?? {});
       }
 
       if (stream === 'lifecycle') {
@@ -415,6 +444,9 @@ function connectToOpenClaw() {
         } else if (d?.phase === 'end') {
           broadcast({ type: 'agentToolsClear', id: agentId });
           broadcast({ type: 'agentStatus', id: agentId, status: 'idle' });
+          if (isSubagentSession(evtSession)) {
+            subagentSessionParent.delete(evtSession);
+          }
         }
       }
       return;
