@@ -164,9 +164,9 @@ function App() {
   }, []);
 
   const [messagesByAgent, setMessagesByAgent] = useState<Record<number, ChatMessage[]>>(loadStoredMessages);
-  const [selectedChatAgentId, setSelectedChatAgentId] = useState<number | null>(1);
+  const [selectedChatAgentId, setSelectedChatAgentId] = useState<number | null>(null);
   const [unreadByAgent, setUnreadByAgent] = useState<Record<number, number>>({});
-  const [isTerminalOpen, setIsTerminalOpen] = useState(true);
+  const [isTerminalOpen, setIsTerminalOpen] = useState(false);
   const [chatWidth, setChatWidth] = useState(380);
   const [wsStatus, setWsStatus] = useState<WsStatus>('connecting');
 
