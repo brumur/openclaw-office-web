@@ -53,6 +53,7 @@ O OpenClaw exige autenticação por dispositivo com par de chaves Ed25519. O flu
 - `PAIRING_REQUIRED` / `not-paired` → device precisa ser aprovado: `openclaw devices approve <deviceId>`
 - `ENOTFOUND host.docker.internal` em container Linux → usar `OPENCLAW_URL=http://172.17.0.1:18789` no runtime validado do Jarvis
 - `missing scope: operator.write` → scopes errados; usar os 4 acima
+- `backend offline` logo após redeploy/rebuild, com app web ainda respondendo, pode ser falso sintoma causado por identidade do bridge perdida e novo `PAIRING_REQUIRED`
 
 ### Enviando mensagens ao agente
 
@@ -201,6 +202,7 @@ OPENCLAW_TOKEN=admin-token-123
 OPENCLAW_IDENTITY_PATH=~/.pixel-office-identity.json
 # Em container Linux no Jarvis, o valor que funcionou foi:
 # OPENCLAW_URL=http://172.17.0.1:18789
+# Em deploy containerizado, persistir OPENCLAW_IDENTITY_PATH por volume/bind mount
 ```
 
 ---

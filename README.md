@@ -82,6 +82,11 @@ openclaw devices approve <deviceId>
 
 You only need to do this once per machine **as long as the identity file persists**. If a redeploy/container rebuild loses `~/.pixel-office-identity.json` (or your custom `OPENCLAW_IDENTITY_PATH`), a new device is generated and OpenClaw may require approval again.
 
+Important operational note: after a container rebuild, this can show up in the UI as a misleading "backend offline" state even when the web app itself is still serving normally. In the Jarvis Docker Linux runtime, first check that:
+- `OPENCLAW_URL` is still `http://172.17.0.1:18789`
+- the identity file is being persisted across redeploys
+- any newly generated device has been approved if persistence was lost
+
 ### 4. Run
 
 Open two terminals:

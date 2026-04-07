@@ -155,3 +155,18 @@ Resultado:
 3. Persistir `~/.pixel-office-identity.json` (ou `OPENCLAW_IDENTITY_PATH`) fora do ciclo efêmero do container
 4. Se aparecer `PAIRING_REQUIRED` novamente, verificar se a identidade foi perdida/trocada
 5. Validar login antes de testar `/ws`
+
+## Incidente recorrente registrado em 2026-04-07
+
+Num redeploy posterior, o Office Web voltou a exibir sintoma de `backend offline`.
+
+A análise confirmou que:
+- a URL do OpenClaw no container já estava correta (`http://172.17.0.1:18789`)
+- o app web estava respondendo normalmente em `:7080`
+- o problema real era o bridge ter gerado uma nova identidade após o rebuild do container
+- o OpenClaw então recusou a conexão com `PAIRING_REQUIRED` até aprovação manual do device novo
+
+Conclusão operacional importante:
+- `backend offline` no Office Web, logo após rebuild/recreate, deve levantar primeiro a hipótese de perda da identidade persistida
+- aprovar o device resolve o incidente imediato
+- persistir a identidade resolve a causa recorrente e deve fazer parte do padrão de deploy
