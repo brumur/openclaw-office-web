@@ -399,7 +399,11 @@ function AssistantBubble({
         lineHeight: 1.6,
         wordBreak: 'break-word',
       }}>
-        <div className="md-content" dangerouslySetInnerHTML={{ __html: html }} />
+        <div
+          className="md-content"
+          style={{ fontSize: CHAT_SIZE, fontFamily: CHAT_FONT, lineHeight: 1.65 }}
+          dangerouslySetInnerHTML={{ __html: html }}
+        />
         {streaming && (
           <span style={{
             display: 'inline-block', width: 8, height: 15,
