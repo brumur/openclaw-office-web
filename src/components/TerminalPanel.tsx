@@ -6,7 +6,7 @@ import { agentColor } from '../agentColors.js';
 import type { ChatMessage, WsStatus } from '../App.js';
 
 const CHAT_FONT = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-const CHAT_SIZE = 16;
+const CHAT_SIZE = 14;
 
 const renderer = new Renderer();
 renderer.code = ({ text, lang }: { text: string; lang?: string }) => {
