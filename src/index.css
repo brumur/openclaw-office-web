@@ -89,8 +89,8 @@ body,
   background: rgba(255,255,255,0.1);
   padding: 1px 5px;
   border-radius: 3px;
-  font-family: monospace;
-  font-size: 0.9em;
+  font-family: inherit;
+  font-size: inherit;
 }
 .md-content pre {
   background: rgba(0,0,0,0.3);
