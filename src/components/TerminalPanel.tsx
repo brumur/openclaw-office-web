@@ -12,7 +12,7 @@ renderer.code = ({ text, lang }: { text: string; lang?: string }) => {
   const highlighted = hljs.highlight(text, { language }).value;
   return `<pre style="margin:6px 0;overflow-x:auto;background:rgba(0,0,0,0.35);padding:10px 12px;border-radius:4px"><code class="hljs language-${language}" style="font-family:monospace;font-size:13px;line-height:1.5">${highlighted}</code></pre>`;
 };
-marked.use({ renderer, breaks: true, gfm: true });
+marked.use({ renderer, breaks: false, gfm: true });
 
 export interface AgentTab {
   id: number;
