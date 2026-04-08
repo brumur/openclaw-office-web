@@ -5,12 +5,15 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { agentColor } from '../agentColors.js';
 import type { ChatMessage, WsStatus } from '../App.js';
 
+const CHAT_FONT = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+const CHAT_SIZE = 16;
+
 // Configure marked with highlight.js syntax highlighting
 const renderer = new Renderer();
 renderer.code = ({ text, lang }: { text: string; lang?: string }) => {
   const language = lang && hljs.getLanguage(lang) ? lang : 'plaintext';
   const highlighted = hljs.highlight(text, { language }).value;
-  return `<pre style="margin:6px 0;overflow-x:auto;background:rgba(0,0,0,0.35);padding:10px 12px;border-radius:4px"><code class="hljs language-${language}" style="font-family:monospace;font-size:13px;line-height:1.5">${highlighted}</code></pre>`;
+  return `<pre style="margin:8px 0;overflow-x:auto;background:rgba(0,0,0,0.4);padding:12px 14px;border-radius:6px"><code class="hljs language-${language}" style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:13px;line-height:1.5">${highlighted}</code></pre>`;
 };
 marked.use({ renderer, breaks: false, gfm: true });
 
@@ -60,7 +63,6 @@ export function TerminalPanel({
   const activeColor = activeTab?.color ?? agentColor(selectedChatAgentId ?? 1);
   const activeName = activeTab?.name ?? 'OpenClaw';
 
-  // Slide-in animation on mount
   const [visible, setVisible] = useState(false);
   useEffect(() => { requestAnimationFrame(() => setVisible(true)); }, []);
 
@@ -73,9 +75,7 @@ export function TerminalPanel({
     if (trimmed) {
       onSend(trimmed);
       setInput('');
-      if (inputRef.current) {
-        inputRef.current.style.height = 'auto';
-      }
+      if (inputRef.current) inputRef.current.style.height = 'auto';
     }
   };
 
@@ -86,26 +86,20 @@ export function TerminalPanel({
     }
   };
 
-  // ── Drag-to-resize handle ──────────────────────────────────────────────────
   const dragRef = useRef<{ startX: number; startWidth: number } | null>(null);
-
   const handleDragStart = (e: React.MouseEvent) => {
     e.preventDefault();
     dragRef.current = { startX: e.clientX, startWidth: width };
-
     const onMove = (ev: MouseEvent) => {
       if (!dragRef.current) return;
       const delta = dragRef.current.startX - ev.clientX;
-      const newWidth = Math.min(700, Math.max(280, dragRef.current.startWidth + delta));
-      onWidthChange(newWidth);
+      onWidthChange(Math.min(700, Math.max(280, dragRef.current.startWidth + delta)));
     };
-
     const onUp = () => {
       dragRef.current = null;
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
     };
-
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
   };
@@ -114,134 +108,80 @@ export function TerminalPanel({
     <div
       style={{
         position: 'absolute',
-        top: 0,
-        right: 0,
-        bottom: 0,
+        top: 0, right: 0, bottom: 0,
         width,
-        background: 'rgba(10, 10, 22, 0.75)',
+        background: 'rgba(10, 10, 22, 0.82)',
         backdropFilter: 'blur(24px)',
         WebkitBackdropFilter: 'blur(24px)',
-        borderLeft: `1px solid rgba(255,255,255,0.07)`,
-        borderTop: `1px solid ${activeColor}22`,
+        borderLeft: '1px solid rgba(255,255,255,0.08)',
         display: 'flex',
         flexDirection: 'column',
-        boxShadow: `-8px 0 40px rgba(0,0,0,0.6), inset 1px 0 0 ${activeColor}18`,
+        boxShadow: '-8px 0 40px rgba(0,0,0,0.6)',
         zIndex: 150,
         transform: visible ? 'translateX(0)' : 'translateX(100%)',
-        transition: 'transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.2s',
+        transition: 'transform 0.28s cubic-bezier(0.22, 1, 0.36, 1)',
+        fontFamily: CHAT_FONT,
       }}
     >
       {/* Drag handle */}
       <div
         onMouseDown={handleDragStart}
-        style={{
-          position: 'absolute',
-          left: -4,
-          top: 0,
-          bottom: 0,
-          width: 8,
-          cursor: 'col-resize',
-          zIndex: 10,
-        }}
+        style={{ position: 'absolute', left: -4, top: 0, bottom: 0, width: 8, cursor: 'col-resize', zIndex: 10 }}
       />
 
       {/* Header */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '10px 14px',
-          borderBottom: '1px solid var(--pixel-border)',
-          background: 'rgba(0,0,0,0.3)',
-          flexShrink: 0,
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-          <div
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: '50%',
-              background: activeColor,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 14,
-              fontWeight: 'bold',
-              color: '#fff',
-              flexShrink: 0,
-              boxShadow: `0 0 8px ${activeColor}66`,
-              fontFamily: 'monospace',
-            }}
-          >
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '12px 16px',
+        borderBottom: '1px solid rgba(255,255,255,0.07)',
+        flexShrink: 0,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{
+            width: 34, height: 34,
+            borderRadius: '50%',
+            background: activeColor,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 15, fontWeight: 700, color: '#fff',
+            boxShadow: `0 0 10px ${activeColor}55`,
+          }}>
             {activeName.charAt(0).toUpperCase()}
           </div>
-          <div style={{ minWidth: 0 }}>
-            <div style={{ color: activeColor, fontSize: 18, fontFamily: 'monospace', fontWeight: 'bold', lineHeight: 1.2 }}>
+          <div>
+            <div style={{ color: '#fff', fontSize: 17, fontWeight: 600, lineHeight: 1.2 }}>
               {activeName}
             </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}>
+              <span style={{
+                width: 7, height: 7, borderRadius: '50%',
+                background: dot.color,
+                display: 'inline-block',
+                animation: dot.pulse ? 'pixel-agents-pulse 1s ease-in-out infinite' : 'none',
+              }} />
+              <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>{dot.title}</span>
+            </div>
           </div>
-          <span
-            title={dot.title}
-            style={{
-              display: 'inline-block',
-              width: 8,
-              height: 8,
-              borderRadius: '50%',
-              background: dot.color,
-              flexShrink: 0,
-              animation: dot.pulse ? 'pixel-agents-pulse 1s ease-in-out infinite' : 'none',
-            }}
-          />
         </div>
-        <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+        <div style={{ display: 'flex', gap: 6 }}>
           {onLogout && (
-            <button
-              onClick={onLogout}
-              title="Sair"
-              style={{
-                background: 'transparent',
-                border: '1px solid var(--pixel-border)',
-                color: 'var(--pixel-text-dim)',
-                cursor: 'pointer',
-                fontSize: 14,
-                padding: '2px 8px',
-                fontFamily: 'monospace',
-              }}
-            >
-              ⏏
-            </button>
+            <button onClick={onLogout} title="Sair" style={headerBtn}>⏏</button>
           )}
-          <button
-            onClick={onClose}
-            style={{
-              background: 'transparent',
-              border: '1px solid var(--pixel-border)',
-              color: 'var(--pixel-text-dim)',
-              cursor: 'pointer',
-              fontSize: 14,
-              padding: '2px 8px',
-              fontFamily: 'monospace',
-            }}
-          >
-            ✕
-          </button>
+          <button onClick={onClose} style={headerBtn}>✕</button>
         </div>
       </div>
 
-      {/* Tab bar */}
+      {/* Agent tabs */}
       {agentTabs.length > 1 && (
-        <div
-          style={{
-            display: 'flex',
-            borderBottom: '1px solid var(--pixel-border)',
-            background: 'rgba(0,0,0,0.2)',
-            overflowX: 'auto',
-            flexShrink: 0,
-            scrollbarWidth: 'none',
-          }}
-        >
+        <div style={{
+          display: 'flex',
+          borderBottom: '1px solid rgba(255,255,255,0.07)',
+          overflowX: 'auto',
+          flexShrink: 0,
+          scrollbarWidth: 'none',
+          padding: '0 4px',
+        }}>
           {agentTabs.map((tab) => {
             const isActive = tab.id === selectedChatAgentId;
             return (
@@ -250,40 +190,29 @@ export function TerminalPanel({
                 onClick={() => onSelectAgent(tab.id)}
                 style={{
                   position: 'relative',
-                  background: isActive ? `${tab.color}18` : 'transparent',
+                  background: 'none',
                   border: 'none',
                   borderBottom: isActive ? `2px solid ${tab.color}` : '2px solid transparent',
-                  color: isActive ? tab.color : 'var(--pixel-text-dim)',
+                  color: isActive ? '#fff' : 'rgba(255,255,255,0.4)',
                   cursor: 'pointer',
-                  padding: '7px 14px',
+                  padding: '10px 16px',
                   fontSize: 14,
-                  fontFamily: 'monospace',
-                  fontWeight: isActive ? 'bold' : 'normal',
+                  fontFamily: CHAT_FONT,
+                  fontWeight: isActive ? 600 : 400,
                   whiteSpace: 'nowrap',
                   flexShrink: 0,
-                  transition: 'color 0.15s, border-color 0.15s, background 0.15s',
+                  transition: 'color 0.15s, border-color 0.15s',
                 }}
               >
                 {tab.name}
                 {tab.unread > 0 && (
-                  <span
-                    style={{
-                      position: 'absolute',
-                      top: 4,
-                      right: 4,
-                      background: '#f87171',
-                      color: '#fff',
-                      fontSize: 10,
-                      fontFamily: 'monospace',
-                      borderRadius: '50%',
-                      width: 16,
-                      height: 16,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      lineHeight: 1,
-                    }}
-                  >
+                  <span style={{
+                    position: 'absolute', top: 6, right: 2,
+                    background: '#f87171', color: '#fff',
+                    fontSize: 10, borderRadius: '50%',
+                    width: 16, height: 16,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
                     {tab.unread > 9 ? '9+' : tab.unread}
                   </span>
                 )}
@@ -300,45 +229,35 @@ export function TerminalPanel({
           flex: 1,
           overflowY: 'auto',
           scrollbarWidth: 'thin',
-          scrollbarColor: 'rgba(255,255,255,0.1) transparent',
-          padding: '12px 10px',
+          scrollbarColor: 'rgba(255,255,255,0.08) transparent',
+          padding: '16px 14px',
           display: 'flex',
           flexDirection: 'column',
-          gap: 10,
+          gap: 4,
         }}
         onClick={() => inputRef.current?.focus()}
       >
         {wsStatus !== 'connected' && (
           <div style={{
-            background: wsStatus === 'disconnected' ? 'rgba(248,113,113,0.12)' : 'rgba(250,204,21,0.10)',
-            border: `1px solid ${wsStatus === 'disconnected' ? '#f87171' : '#facc15'}`,
+            background: wsStatus === 'disconnected' ? 'rgba(248,113,113,0.1)' : 'rgba(250,204,21,0.08)',
+            border: `1px solid ${wsStatus === 'disconnected' ? '#f8717155' : '#facc1555'}`,
             color: wsStatus === 'disconnected' ? '#f87171' : '#facc15',
-            fontSize: 14,
-            fontFamily: 'monospace',
-            padding: '8px 12px',
-            borderRadius: 4,
-            textAlign: 'center',
+            fontSize: 13, fontFamily: CHAT_FONT,
+            padding: '8px 12px', borderRadius: 8, textAlign: 'center',
           }}>
-            {wsStatus === 'disconnected'
-              ? 'Backend offline — reconectando em 5s...'
-              : 'Conectando ao backend...'}
+            {wsStatus === 'disconnected' ? 'Backend offline — reconectando em 5s...' : 'Conectando ao backend...'}
           </div>
         )}
 
         {selectedChatAgentId === null ? (
           <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flex: 1,
-            gap: 10,
-            opacity: 0.45,
-            pointerEvents: 'none',
-            userSelect: 'none',
+            display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center',
+            flex: 1, gap: 10, opacity: 0.4,
+            pointerEvents: 'none', userSelect: 'none',
           }}>
-            <div style={{ fontSize: 32 }}>🖱️</div>
-            <div style={{ color: 'var(--pixel-text-dim)', fontSize: 16, fontFamily: 'monospace', textAlign: 'center' }}>
+            <div style={{ fontSize: 28 }}>🖱️</div>
+            <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14, fontFamily: CHAT_FONT, textAlign: 'center' }}>
               Clique em um agente<br />para conversar
             </div>
           </div>
@@ -346,22 +265,17 @@ export function TerminalPanel({
           <>
             {messages.length === 0 && wsStatus === 'connected' && (
               <div style={{
-                color: 'var(--pixel-text-dim)',
-                fontSize: 16,
-                fontFamily: 'monospace',
-                textAlign: 'center',
-                marginTop: 40,
-                opacity: 0.5,
+                color: 'rgba(255,255,255,0.3)', fontSize: 14,
+                fontFamily: CHAT_FONT, textAlign: 'center', marginTop: 40,
               }}>
                 Fale com {activeName}...
               </div>
             )}
-
             {messages.map((msg, i) =>
               msg.role === 'user' ? (
                 <UserBubble key={i} text={msg.text} />
               ) : (
-                <AssistantBubble key={i} text={msg.text} streaming={msg.streaming} agentColor={activeColor} agentInitial={activeName.charAt(0).toUpperCase()} />
+                <AssistantBubble key={i} text={msg.text} streaming={msg.streaming} agentColor={activeColor} agentName={activeName} />
               )
             )}
             <div ref={bottomRef} />
@@ -370,37 +284,42 @@ export function TerminalPanel({
       </div>
 
       {/* Input */}
-      <div
-        style={{
-          display: 'flex',
-          borderTop: '1px solid var(--pixel-border)',
-          background: 'rgba(0,0,0,0.4)',
-          flexShrink: 0,
-          alignItems: 'flex-end',
-        }}
-      >
+      <div style={{
+        borderTop: '1px solid rgba(255,255,255,0.07)',
+        padding: '10px 12px',
+        display: 'flex',
+        gap: 8,
+        alignItems: 'flex-end',
+        background: 'rgba(0,0,0,0.3)',
+        flexShrink: 0,
+      }}>
         <textarea
           ref={inputRef}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={selectedChatAgentId === null ? 'Selecione um agente no mapa...' : wsStatus === 'connected' ? `Mensagem para ${activeName}… (Shift+Enter nova linha)` : 'Aguardando conexão...'}
+          placeholder={
+            selectedChatAgentId === null ? 'Selecione um agente...' :
+            wsStatus === 'connected' ? `Mensagem para ${activeName}…` :
+            'Aguardando conexão...'
+          }
           disabled={wsStatus !== 'connected' || selectedChatAgentId === null}
           autoFocus
           rows={1}
           style={{
             flex: 1,
-            background: 'transparent',
-            border: 'none',
-            color: 'var(--pixel-text)',
+            background: 'rgba(255,255,255,0.07)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            borderRadius: 12,
+            color: '#fff',
             outline: 'none',
-            fontSize: 15,
-            fontFamily: 'system-ui, -apple-system, sans-serif',
-            padding: '10px 12px',
+            fontSize: CHAT_SIZE,
+            fontFamily: CHAT_FONT,
+            padding: '10px 14px',
             resize: 'none',
             maxHeight: 120,
             overflowY: 'auto',
-            lineHeight: 1.6,
+            lineHeight: 1.5,
           }}
           onInput={(e) => {
             const el = e.currentTarget;
@@ -411,16 +330,17 @@ export function TerminalPanel({
         <button
           onClick={handleSubmit}
           style={{
-            background: input.trim() ? activeColor : 'transparent',
+            background: input.trim() ? activeColor : 'rgba(255,255,255,0.1)',
             border: 'none',
-            borderLeft: '1px solid var(--pixel-border)',
-            color: input.trim() ? '#fff' : 'var(--pixel-text-dim)',
+            borderRadius: 12,
+            color: input.trim() ? '#fff' : 'rgba(255,255,255,0.3)',
             cursor: input.trim() ? 'pointer' : 'default',
-            padding: '0 16px',
-            fontSize: 17,
-            fontFamily: 'monospace',
+            padding: '10px 16px',
+            fontSize: 18,
+            lineHeight: 1,
             transition: 'background 0.15s',
-            alignSelf: 'stretch',
+            flexShrink: 0,
+            alignSelf: 'flex-end',
           }}
         >
           ↵
@@ -430,23 +350,31 @@ export function TerminalPanel({
   );
 }
 
+const headerBtn: React.CSSProperties = {
+  background: 'rgba(255,255,255,0.06)',
+  border: '1px solid rgba(255,255,255,0.1)',
+  borderRadius: 6,
+  color: 'rgba(255,255,255,0.5)',
+  cursor: 'pointer',
+  fontSize: 13,
+  padding: '4px 10px',
+};
+
 function UserBubble({ text }: { text: string }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-      <div
-        style={{
-          background: 'rgba(255,255,255,0.1)',
-          border: '1px solid rgba(255,255,255,0.15)',
-          color: 'var(--pixel-text)',
-          padding: '10px 14px',
-          maxWidth: '80%',
-          fontSize: 16,
-          fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
-          lineHeight: 1.6,
-          borderRadius: '12px 12px 2px 12px',
-          wordBreak: 'break-word',
-        }}
-      >
+    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 6 }}>
+      <div style={{
+        background: 'rgba(255,255,255,0.12)',
+        color: '#fff',
+        padding: '10px 14px',
+        maxWidth: '78%',
+        fontSize: CHAT_SIZE,
+        fontFamily: CHAT_FONT,
+        lineHeight: 1.5,
+        borderRadius: '18px 18px 4px 18px',
+        wordBreak: 'break-word',
+        whiteSpace: 'pre-wrap',
+      }}>
         {text}
       </div>
     </div>
@@ -457,12 +385,12 @@ function AssistantBubble({
   text,
   streaming,
   agentColor: color,
-  agentInitial,
+  agentName,
 }: {
   text: string;
   streaming?: boolean;
   agentColor: string;
-  agentInitial: string;
+  agentName: string;
 }) {
   const html = useMemo(() => marked.parse(text) as string, [text]);
   const [copied, setCopied] = useState(false);
@@ -477,89 +405,59 @@ function AssistantBubble({
 
   return (
     <div
-      style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}
+      style={{ marginTop: 10, position: 'relative' }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {/* Colored avatar */}
-      <div
-        style={{
-          width: 26,
-          height: 26,
-          borderRadius: '50%',
-          background: color,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: 12,
-          fontWeight: 'bold',
-          color: '#fff',
-          flexShrink: 0,
-          marginTop: 2,
-          fontFamily: 'monospace',
-          boxShadow: `0 0 6px ${color}44`,
-        }}
-      >
-        {agentInitial}
+      <div style={{
+        fontSize: 11, fontFamily: CHAT_FONT,
+        color: color, fontWeight: 600,
+        marginBottom: 4, paddingLeft: 2,
+        textTransform: 'uppercase', letterSpacing: '0.06em',
+      }}>
+        {agentName}
       </div>
-      <div style={{ flex: 1, minWidth: 0, position: 'relative' }}>
-        {/* Copy button */}
-        {hovered && !streaming && (
-          <button
-            onClick={handleCopy}
-            title="Copiar"
-            style={{
-              position: 'absolute',
-              top: 6,
-              right: 6,
-              background: 'rgba(30,30,46,0.9)',
-              border: `1px solid ${color}44`,
-              color: copied ? '#4ade80' : 'var(--pixel-text-dim)',
-              cursor: 'pointer',
-              fontSize: 11,
-              fontFamily: 'monospace',
-              padding: '2px 6px',
-              borderRadius: 3,
-              zIndex: 1,
-              transition: 'color 0.15s',
-            }}
-          >
-            {copied ? '✓ copiado' : 'copiar'}
-          </button>
+      <div style={{
+        color: 'rgba(255,255,255,0.92)',
+        fontSize: CHAT_SIZE,
+        fontFamily: CHAT_FONT,
+        lineHeight: 1.6,
+        wordBreak: 'break-word',
+        paddingRight: hovered && !streaming ? 52 : 0,
+      }}>
+        <div className="md-content" dangerouslySetInnerHTML={{ __html: html }} />
+        {streaming && (
+          <span style={{
+            display: 'inline-block',
+            width: 8, height: 15,
+            background: color,
+            marginLeft: 3,
+            verticalAlign: 'middle',
+            animation: 'pixel-agents-pulse 0.8s ease-in-out infinite',
+          }} />
         )}
-        <div
+      </div>
+      {hovered && !streaming && (
+        <button
+          onClick={handleCopy}
+          title="Copiar"
           style={{
-            background: 'rgba(255,255,255,0.05)',
-            border: `1px solid ${color}33`,
-            color: 'var(--pixel-text)',
-            padding: '10px 14px',
-            fontSize: 16,
-            fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
-            lineHeight: 1.6,
-            borderRadius: '2px 12px 12px 12px',
-            wordBreak: 'break-word',
+            position: 'absolute',
+            top: 20, right: 0,
+            background: 'rgba(255,255,255,0.08)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            borderRadius: 6,
+            color: copied ? '#4ade80' : 'rgba(255,255,255,0.5)',
+            cursor: 'pointer',
+            fontSize: 12,
+            fontFamily: CHAT_FONT,
+            padding: '3px 8px',
+            transition: 'color 0.15s',
           }}
         >
-          <div
-            className="md-content"
-            // eslint-disable-next-line react/no-danger
-            dangerouslySetInnerHTML={{ __html: html }}
-          />
-          {streaming && (
-            <span
-              style={{
-                display: 'inline-block',
-                width: 8,
-                height: 14,
-                background: color,
-                marginLeft: 3,
-                verticalAlign: 'middle',
-                animation: 'pixel-agents-pulse 0.8s ease-in-out infinite',
-              }}
-            />
-          )}
-        </div>
-      </div>
+          {copied ? '✓' : 'copiar'}
+        </button>
+      )}
     </div>
   );
 }
