@@ -167,7 +167,7 @@ function App() {
   const [selectedChatAgentId, setSelectedChatAgentId] = useState<number | null>(null);
   const [unreadByAgent, setUnreadByAgent] = useState<Record<number, number>>({});
   const [isTerminalOpen, setIsTerminalOpen] = useState(false);
-  const [chatWidth, setChatWidth] = useState(380);
+  const [chatHeight, setChatHeight] = useState(320);
   const [wsStatus, setWsStatus] = useState<WsStatus>('connecting');
 
   // Keep a ref so the message handler always sees the current selected agent
@@ -572,8 +572,8 @@ function App() {
             await fetch('/api/logout', { method: 'POST', credentials: 'include' });
             setIsAuthenticated(false);
           }}
-          width={chatWidth}
-          onWidthChange={setChatWidth}
+          height={chatHeight}
+          onHeightChange={setChatHeight}
         />
       )}
 
