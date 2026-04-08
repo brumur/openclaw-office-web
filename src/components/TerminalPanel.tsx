@@ -211,136 +211,123 @@ export function TerminalPanel({
         </div>
       </div>
 
-      {/* Messages + input */}
-      <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
-        {/* Messages */}
-        <div
-          className="pixel-chat-scroll"
-          style={{
-            flex: 1,
-            overflowY: 'auto',
-            scrollbarWidth: 'thin',
-            scrollbarColor: 'rgba(255,255,255,0.08) transparent',
-            padding: '14px 20px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 2,
-          }}
-          onClick={() => inputRef.current?.focus()}
-        >
-          {wsStatus !== 'connected' && (
-            <div style={{
-              background: wsStatus === 'disconnected' ? 'rgba(248,113,113,0.1)' : 'rgba(250,204,21,0.08)',
-              border: `1px solid ${wsStatus === 'disconnected' ? '#f8717155' : '#facc1555'}`,
-              color: wsStatus === 'disconnected' ? '#f87171' : '#facc15',
-              fontSize: 13, padding: '7px 12px', borderRadius: 8, textAlign: 'center',
-              marginBottom: 8,
-            }}>
-              {wsStatus === 'disconnected' ? 'Backend offline — reconectando em 5s...' : 'Conectando ao backend...'}
-            </div>
-          )}
-
-          {selectedChatAgentId === null ? (
-            <div style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              flex: 1, gap: 8, opacity: 0.35, userSelect: 'none',
-              color: '#fff', fontSize: 14,
-            }}>
-              Clique em um agente no mapa para conversar
-            </div>
-          ) : (
-            <>
-              {messages.length === 0 && wsStatus === 'connected' && (
-                <div style={{
-                  color: 'rgba(255,255,255,0.25)', fontSize: 14,
-                  textAlign: 'center', marginTop: 20,
-                }}>
-                  Fale com {activeName}...
-                </div>
-              )}
-              {messages.map((msg, i) =>
-                msg.role === 'user' ? (
-                  <UserBubble key={i} text={msg.text} />
-                ) : (
-                  <AssistantBubble key={i} text={msg.text} streaming={msg.streaming} agentColor={activeColor} agentName={activeName} />
-                )
-              )}
-              <div ref={bottomRef} />
-            </>
-          )}
-        </div>
-
-        {/* Input — vertical right column */}
-        <div style={{
-          width: 300,
-          borderLeft: '1px solid rgba(255,255,255,0.07)',
+      {/* Messages */}
+      <div
+        className="pixel-chat-scroll"
+        style={{
+          flex: 1,
+          overflowY: 'auto',
+          scrollbarWidth: 'thin',
+          scrollbarColor: 'rgba(255,255,255,0.08) transparent',
+          padding: '14px 24px',
           display: 'flex',
           flexDirection: 'column',
-          padding: '12px',
-          gap: 8,
-          flexShrink: 0,
-        }}>
+          gap: 2,
+          minHeight: 0,
+        }}
+        onClick={() => inputRef.current?.focus()}
+      >
+        {wsStatus !== 'connected' && (
           <div style={{
-            color: activeColor,
-            fontSize: 13,
-            fontWeight: 600,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
+            background: wsStatus === 'disconnected' ? 'rgba(248,113,113,0.1)' : 'rgba(250,204,21,0.08)',
+            border: `1px solid ${wsStatus === 'disconnected' ? '#f8717155' : '#facc1555'}`,
+            color: wsStatus === 'disconnected' ? '#f87171' : '#facc15',
+            fontSize: 13, padding: '7px 12px', borderRadius: 8, textAlign: 'center',
+            marginBottom: 8,
           }}>
-            <span style={{
-              width: 7, height: 7, borderRadius: '50%',
-              background: dot.color, display: 'inline-block',
-              animation: dot.pulse ? 'pixel-agents-pulse 1s ease-in-out infinite' : 'none',
-            }} />
-            {activeName}
+            {wsStatus === 'disconnected' ? 'Backend offline — reconectando em 5s...' : 'Conectando ao backend...'}
           </div>
-          <textarea
-            ref={inputRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={
-              selectedChatAgentId === null ? 'Selecione um agente...' :
-              wsStatus === 'connected' ? `Mensagem… (Enter envia)` :
-              'Aguardando conexão...'
-            }
-            disabled={wsStatus !== 'connected' || selectedChatAgentId === null}
-            autoFocus
-            style={{
-              flex: 1,
-              background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: 10,
-              color: '#fff',
-              outline: 'none',
-              fontSize: CHAT_SIZE,
-              fontFamily: CHAT_FONT,
-              padding: '10px 12px',
-              resize: 'none',
-              lineHeight: 1.5,
-            }}
-          />
-          <button
-            onClick={handleSubmit}
-            disabled={!input.trim() || wsStatus !== 'connected' || selectedChatAgentId === null}
-            style={{
-              background: input.trim() ? activeColor : 'rgba(255,255,255,0.08)',
-              border: 'none',
-              borderRadius: 10,
-              color: input.trim() ? '#fff' : 'rgba(255,255,255,0.25)',
-              cursor: input.trim() ? 'pointer' : 'default',
-              padding: '10px',
-              fontSize: 15,
-              fontFamily: CHAT_FONT,
-              fontWeight: 600,
-              transition: 'background 0.15s',
-              flexShrink: 0,
-            }}
-          >
-            Enviar ↵
-          </button>
-        </div>
+        )}
+
+        {selectedChatAgentId === null ? (
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flex: 1, opacity: 0.35, userSelect: 'none', color: '#fff', fontSize: 14,
+          }}>
+            Clique em um agente no mapa para conversar
+          </div>
+        ) : (
+          <>
+            {messages.length === 0 && wsStatus === 'connected' && (
+              <div style={{ color: 'rgba(255,255,255,0.25)', fontSize: 14, textAlign: 'center', marginTop: 20 }}>
+                Fale com {activeName}...
+              </div>
+            )}
+            {messages.map((msg, i) =>
+              msg.role === 'user' ? (
+                <UserBubble key={i} text={msg.text} />
+              ) : (
+                <AssistantBubble key={i} text={msg.text} streaming={msg.streaming} agentColor={activeColor} agentName={activeName} />
+              )
+            )}
+            <div ref={bottomRef} />
+          </>
+        )}
+      </div>
+
+      {/* Input */}
+      <div style={{
+        borderTop: '1px solid rgba(255,255,255,0.07)',
+        padding: '10px 16px',
+        display: 'flex',
+        gap: 8,
+        alignItems: 'flex-end',
+        flexShrink: 0,
+      }}>
+        <textarea
+          ref={inputRef}
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={
+            selectedChatAgentId === null ? 'Selecione um agente...' :
+            wsStatus === 'connected' ? `Mensagem para ${activeName}… (Enter envia)` :
+            'Aguardando conexão...'
+          }
+          disabled={wsStatus !== 'connected' || selectedChatAgentId === null}
+          autoFocus
+          rows={1}
+          style={{
+            flex: 1,
+            background: 'rgba(255,255,255,0.07)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            borderRadius: 12,
+            color: '#fff',
+            outline: 'none',
+            fontSize: CHAT_SIZE,
+            fontFamily: CHAT_FONT,
+            padding: '10px 14px',
+            resize: 'none',
+            maxHeight: 100,
+            overflowY: 'auto',
+            lineHeight: 1.5,
+          }}
+          onInput={(e) => {
+            const el = e.currentTarget;
+            el.style.height = 'auto';
+            el.style.height = `${Math.min(el.scrollHeight, 100)}px`;
+          }}
+        />
+        <button
+          onClick={handleSubmit}
+          disabled={!input.trim() || wsStatus !== 'connected' || selectedChatAgentId === null}
+          style={{
+            background: input.trim() ? activeColor : 'rgba(255,255,255,0.08)',
+            border: 'none',
+            borderRadius: 12,
+            color: input.trim() ? '#fff' : 'rgba(255,255,255,0.25)',
+            cursor: input.trim() ? 'pointer' : 'default',
+            padding: '10px 20px',
+            fontSize: 15,
+            fontFamily: CHAT_FONT,
+            fontWeight: 600,
+            transition: 'background 0.15s',
+            flexShrink: 0,
+            whiteSpace: 'nowrap',
+          }}
+        >
+          Enviar ↵
+        </button>
       </div>
     </div>
   );
