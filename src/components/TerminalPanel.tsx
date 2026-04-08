@@ -395,12 +395,12 @@ export function TerminalPanel({
             color: 'var(--pixel-text)',
             outline: 'none',
             fontSize: 15,
-            fontFamily: 'monospace',
+            fontFamily: 'system-ui, -apple-system, sans-serif',
             padding: '10px 12px',
             resize: 'none',
             maxHeight: 120,
             overflowY: 'auto',
-            lineHeight: 1.5,
+            lineHeight: 1.6,
           }}
           onInput={(e) => {
             const el = e.currentTarget;
@@ -438,11 +438,11 @@ function UserBubble({ text }: { text: string }) {
           background: 'rgba(255,255,255,0.1)',
           border: '1px solid rgba(255,255,255,0.15)',
           color: 'var(--pixel-text)',
-          padding: '8px 12px',
+          padding: '8px 14px',
           maxWidth: '80%',
           fontSize: 15,
-          fontFamily: 'monospace',
-          lineHeight: 1.5,
+          fontFamily: 'system-ui, -apple-system, sans-serif',
+          lineHeight: 1.6,
           borderRadius: '12px 12px 2px 12px',
           wordBreak: 'break-word',
         }}
@@ -532,10 +532,10 @@ function AssistantBubble({
             background: 'rgba(255,255,255,0.05)',
             border: `1px solid ${color}33`,
             color: 'var(--pixel-text)',
-            padding: '8px 12px',
+            padding: '8px 14px',
             fontSize: 15,
-            fontFamily: 'monospace',
-            lineHeight: 1.6,
+            fontFamily: 'system-ui, -apple-system, sans-serif',
+            lineHeight: 1.7,
             borderRadius: '2px 12px 12px 12px',
             wordBreak: 'break-word',
           }}
