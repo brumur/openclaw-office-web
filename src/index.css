@@ -68,7 +68,8 @@ body,
 }
 
 /* ── Markdown content in chat bubbles ──────────────────────────────────────── */
-.md-content { line-height: 1.65; font-size: inherit; font-family: inherit; color: rgba(255,255,255,0.9); }
+.md-content, .md-content * { font-family: inherit; font-size: inherit; }
+.md-content { line-height: 1.65; color: rgba(255,255,255,0.9); }
 .md-content p { margin: 0 0 8px 0; }
 .md-content p:last-child { margin-bottom: 0; }
 .md-content strong { font-weight: 600; color: #fff; }
