@@ -167,10 +167,12 @@ function isSubagentSession(sessionKey) {
 }
 
 // Derive a human-readable label from a full sessionKey
-// "agent:dev:whatsapp:direct:+556..." → "dev", "agent:main:main" → "main"
+// "agent:main:service-ops" → "service-ops", "agent:dev:dev" → "dev", "agent:main:main" → "main"
 function sessionLabel(evtSession) {
   const parts = evtSession.split(':');
-  return parts.length >= 2 ? parts[1] : evtSession;
+  // parts[2] is the agent name within the workspace (e.g. "service-ops", "dev", "main")
+  // Fallback to parts[1] (workspace) if parts[2] is missing
+  return parts.length >= 3 ? parts[2] : (parts.length >= 2 ? parts[1] : evtSession);
 }
 
 // Find the resident that owns a given sessionKey.

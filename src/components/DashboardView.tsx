@@ -29,6 +29,14 @@ const gridStyle: React.CSSProperties = {
   gap: 14,
 };
 
+// Tech grid background — nodes + connecting lines (neural network / circuit style)
+const DASH_BG_SVG = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Cdefs%3E%3CradialGradient id='dot' cx='50%25' cy='50%25' r='50%25'%3E%3Cstop offset='0%25' stop-color='rgba(90,140,255,0.35)'/%3E%3Cstop offset='100%25' stop-color='rgba(90,140,255,0)'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='40' cy='40' r='2' fill='url(%23dot)'/%3E%3Ccircle cx='0' cy='0' r='1.2' fill='rgba(90,140,255,0.12)'/%3E%3Ccircle cx='80' cy='0' r='1.2' fill='rgba(90,140,255,0.12)'/%3E%3Ccircle cx='0' cy='80' r='1.2' fill='rgba(90,140,255,0.12)'/%3E%3Ccircle cx='80' cy='80' r='1.2' fill='rgba(90,140,255,0.12)'/%3E%3Cline x1='0' y1='0' x2='40' y2='40' stroke='rgba(90,140,255,0.06)' stroke-width='0.5'/%3E%3Cline x1='80' y1='0' x2='40' y2='40' stroke='rgba(90,140,255,0.06)' stroke-width='0.5'/%3E%3Cline x1='0' y1='80' x2='40' y2='40' stroke='rgba(90,140,255,0.06)' stroke-width='0.5'/%3E%3Cline x1='80' y1='80' x2='40' y2='40' stroke='rgba(90,140,255,0.06)' stroke-width='0.5'/%3E%3Cline x1='40' y1='0' x2='40' y2='40' stroke='rgba(90,140,255,0.03)' stroke-width='0.3'/%3E%3Cline x1='0' y1='40' x2='40' y2='40' stroke='rgba(90,140,255,0.03)' stroke-width='0.3'/%3E%3C/svg%3E")`;
+
+// Radial glows for depth
+const DASH_BG_GLOW = 'radial-gradient(ellipse at 15% 5%, rgba(90,140,255,0.12) 0%, transparent 55%)';
+const DASH_BG_GLOW2 = 'radial-gradient(ellipse at 85% 90%, rgba(90,200,140,0.08) 0%, transparent 50%)';
+const DASH_BG_GLOW3 = 'radial-gradient(ellipse at 50% 50%, rgba(90,140,255,0.03) 0%, transparent 70%)';
+
 export function DashboardView({
   officeState,
   agents,
@@ -43,7 +51,7 @@ export function DashboardView({
     position: 'absolute',
     inset: 0,
     overflow: 'auto',
-    background: 'var(--pixel-bg)',
+    background: `${DASH_BG_GLOW}, ${DASH_BG_GLOW2}, ${DASH_BG_GLOW3}, ${DASH_BG_SVG}, var(--pixel-bg)`,
     padding: '24px',
     paddingLeft: 24 + sidebarWidth,
     paddingBottom: 24 + bottomOffset,
