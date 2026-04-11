@@ -1,6 +1,6 @@
 # Pixel Office Web
 
-A pixel-art office in your browser where animated characters represent real AI agents running on an [OpenClaw](https://openclaw.ai) gateway. Watch your agents work in real time — tool calls appear as speech bubbles, chat history persists, and each session can become its own character.
+A corporate web dashboard for [OpenClaw](https://openclaw.ai) — visualize, monitor, and chat with your AI agents in real time through an interactive pixel-art office or a modern dashboard view.
 
 ![Screenshot](public/Screenshot.jpg)
 
@@ -8,12 +8,15 @@ A pixel-art office in your browser where animated characters represent real AI a
 
 ## Features
 
-- **Live agent visualization** — pixel characters walk, idle, and react as agents run
-- **Real-time tool bubbles** — tool calls (bash, search, browser, write…) pop up above the character while active
-- **Chat panel** — markdown-rendered conversation with streaming cursor, persisted in localStorage
-- **Connection indicator** — green/yellow/red dot shows backend status; input disabled when offline
+- **Dashboard** — cards for every configured agent showing live status (Thinking, Executing, Writing, Waiting, Idle, Offline)
+- **Pixel Office** — animated characters walk and react as agents work; tool calls appear as speech bubbles
+- **Real-time chat** — markdown-rendered conversation with streaming, per-agent history in localStorage
+- **Agent registry** — configure which agents appear on the dashboard; offline agents show as greyed-out placeholders
+- **Channel badges** — see which messaging channels (WhatsApp, Telegram, Slack, etc.) each agent is connected to
+- **Editable office layout** — sidebar editor to place furniture, change floors/walls; undo/redo; save to JSON
+- **Responsive navigation** — collapsible sidebar on desktop, bottom tab bar on mobile
 - **Auto-reconnect** — frontend and backend both reconnect automatically if the gateway goes down
-- **Editable office layout** — drag, rotate, and place furniture; undo/redo; save to JSON
+- **Session auth** — simple login screen with configurable credentials
 
 ---
 
@@ -21,17 +24,18 @@ A pixel-art office in your browser where animated characters represent real AI a
 
 ```
 Browser (React + Canvas)
-    ↕  HTTP + WebSocket  http://localhost:3000 + /ws
-server.js  (Node / Express)
-    ↕  WebSocket  ws://<your-openclaw-host>
-OpenClaw gateway  (your VPS)
+    |  HTTP + WebSocket
+    v
+server.js  (Node / Express)    ← http://localhost:3000 + /ws
+    |  WebSocket
+    v
+OpenClaw gateway  (your VPS)   ← ws://<your-openclaw-host>:18789
 ```
 
 | Port | Service |
 |------|---------|
 | 8090 | Vite dev server (frontend, dev only) |
-| 3000 | `server.js` serving HTTP API + `/ws` |
-| 7080 | Jarvis host publish → app/container `3000` |
+| 3000 | `server.js` — HTTP API + `/ws` WebSocket bridge |
 
 See [`docs/architecture.md`](docs/architecture.md) for a deeper breakdown.
 
@@ -41,97 +45,222 @@ See [`docs/architecture.md`](docs/architecture.md) for a deeper breakdown.
 
 - **Node.js** 18+
 - An **OpenClaw** instance with operator access
-- Your OpenClaw URL and admin token
+- Your OpenClaw gateway URL and admin token
 
 ---
 
-## Setup
+## Quick Start
 
-### 1. Install dependencies
+### 1. Clone and install
 
 ```bash
+git clone <your-repo-url>
+cd office-web
 npm install
 ```
 
-### 2. Configure environment (optional)
+### 2. Configure environment
 
-Create a `.env` file in the project root, or just export the variables:
+Copy the example and edit:
 
 ```bash
+cp .env.example .env
+```
+
+Edit `.env` with your values:
+
+```bash
+# ── Web UI credentials ──
+PIXEL_USER=admin
+PIXEL_PASS=your_strong_password
+
+# ── OpenClaw connection ──
 OPENCLAW_URL=http://your-openclaw-host:18789
 OPENCLAW_TOKEN=your-admin-token
+
+# ── Optional ──
+PORT=3000                              # Server port (default: 3000)
+OPENCLAW_IDENTITY_PATH=/path/to/key    # Custom path for device identity file
 ```
 
-Important runtime note from the Jarvis deploy: inside a Linux container, `host.docker.internal` failed with `ENOTFOUND`. The working value was:
+**Docker/container note:** Inside a Linux container, use the Docker bridge IP instead of `localhost`:
 
 ```bash
-OPENCLAW_URL=http://172.17.0.1:18789
+OPENCLAW_URL=http://172.17.0.1:18789   # Linux containers
+OPENCLAW_URL=http://host.docker.internal:18789  # macOS Docker Desktop
 ```
 
-Defaults in the code are still `http://185.205.244.235:18789` and `admin-token-123`, but treat those only as local defaults.
+### 3. Approve the device (first run only)
 
-### 3. Approve the device on first run
-
-On first start the backend generates an Ed25519 key pair stored at `~/.pixel-office-identity.json` and attempts to connect. Once network access is correct, the next expected blocker is `PAIRING_REQUIRED` / `not-paired` until the device is approved on the server:
+On first start, the backend generates an Ed25519 key pair stored at `~/.pixel-office-identity.json`. OpenClaw requires device approval:
 
 ```bash
-# On your VPS
+# On your OpenClaw VPS
 openclaw devices list
 openclaw devices approve <deviceId>
 ```
 
-You only need to do this once per machine **as long as the identity file persists**. If a redeploy/container rebuild loses `~/.pixel-office-identity.json` (or your custom `OPENCLAW_IDENTITY_PATH`), a new device is generated and OpenClaw may require approval again.
+You only need to do this once per machine. If the identity file is lost (container rebuild, etc.), a new device is generated and requires re-approval.
 
 ### 4. Run
-
-Open two terminals:
 
 ```bash
 # Terminal 1 — backend proxy
 node server.js
 
-# Terminal 2 — frontend
+# Terminal 2 — frontend dev server
 npm run dev
 ```
 
-Open `http://localhost:8090` in dev.
+Open `http://localhost:8090` and log in with your `PIXEL_USER`/`PIXEL_PASS` credentials.
 
-For the Jarvis runtime that was validated in practice, the app is exposed on `http://<jarvis-host>:7080` and forwarded to container/app port `3000`.
+### 5. Build for production
+
+```bash
+npm run build
+node server.js   # serves the built frontend + API on port 3000
+```
+
+---
+
+## Configuring Agents
+
+Agents are configured in two files:
+
+### `src/agentConfig.ts` — Agent Registry
+
+This file defines which agents appear on the **Dashboard**. Every agent listed here will always show a card — online agents display live status, offline ones appear as greyed-out "Offline" placeholders.
+
+```ts
+export const CONFIGURED_AGENTS: AgentDef[] = [
+  { name: 'Jarvis',            folderName: 'jarvis',            color: '#5a8cff' },
+  { name: 'Dev',               folderName: 'dev',               color: '#4ade80' },
+  { name: 'Infra',             folderName: 'infra',             color: '#fb923c' },
+  { name: 'support-agent',     folderName: 'support-agent',     color: '#a78bfa' },
+  { name: 'qa-tester',         folderName: 'qa-tester',         color: '#38bdf8' },
+  { name: 'data-custodian',    folderName: 'data-custodian',    color: '#f472b6' },
+  { name: 'service-ops',       folderName: 'service-ops',       color: '#34d399' },
+  { name: 'analytics',         folderName: 'analytics',         color: '#fbbf24' },
+  { name: 'security-watchdog', folderName: 'security-watchdog', color: '#f87171' },
+  { name: 'change-manager',    folderName: 'change-manager',    color: '#e879f9' },
+];
+```
+
+**To add a new agent:**
+
+1. Add an entry to `CONFIGURED_AGENTS` with:
+   - `name` — Display name shown on the card
+   - `folderName` — Must match the OpenClaw agent folder name (case-insensitive)
+   - `color` — Hex color for the card accent
+
+2. Add a color entry in `src/agentColors.ts` for the pixel office character:
+
+```ts
+const RESIDENT_COLORS: Record<number, string> = {
+  1: '#5a8cff',  // Jarvis
+  2: '#f472b6',  // (reserved)
+  3: '#4ade80',  // Dev
+  // ... add your agent's ID and color
+};
+```
+
+**To remove an agent:** Simply delete its entry from `CONFIGURED_AGENTS`. Agents connected to OpenClaw but NOT in this list are hidden from the Dashboard.
+
+### How agent matching works
+
+When an agent connects to OpenClaw, the server sends its `folderName`. The Dashboard matches this against `CONFIGURED_AGENTS` entries (case-insensitive). If a match is found, the card goes from "Offline" to showing live status. Unmatched agents are hidden.
+
+---
+
+## Agent Status Reference
+
+| Status | Label | Meaning |
+|--------|-------|---------|
+| Thinking | PENSANDO | Agent is processing/reasoning |
+| Executing | EXECUTANDO | Agent is running a tool (bash, search, etc.) |
+| Writing | ESCREVENDO | Agent is streaming a response |
+| Waiting | AGUARDANDO | Agent needs permission to proceed |
+| Idle | INATIVO | Agent is online but not doing anything |
+| Offline | OFFLINE | Agent is configured but not connected to OpenClaw |
+
+---
+
+## Navigation
+
+### Desktop (>= 768px)
+
+- **Sidebar** on the left with icons for Office, Dashboard, Chat, and Settings
+- Collapses to icon-only (48px) in Office view, expands (200px) in Dashboard view
+- Click the toggle arrow to expand/collapse manually (state saved in localStorage)
+- **Edit Layout** button appears in the top-right of Office view to enter the layout editor
+
+### Mobile (< 768px)
+
+- **Bottom tab bar** with 4 tabs: Office, Dashboard, Chat, Settings
+- Layout editor accessible via floating button in Office view
 
 ---
 
 ## Usage
 
-- **Chat** — click the agent character to open the chat panel, type a message and press Enter
-- **Close / reopen** — the ✕ button closes the panel; click the character again to reopen
-- **Tool activity** — hover over a character to see which tool is currently running
-- **Edit layout** — click the edit button in the bottom toolbar to rearrange furniture
+| Action | How |
+|--------|-----|
+| **View agents** | Open Dashboard — all configured agents show as cards |
+| **Chat with agent** | Click "Chat" on an agent card, or use the Chat nav item |
+| **Monitor activity** | Cards update in real-time: status, active tools, last message |
+| **Edit office** | Click "Edit Layout" button (top-right in Office view) |
+| **Place furniture** | Select from catalog in the editor sidebar, click to place |
+| **Change floors/walls** | Use Floor/Wall tabs in the editor sidebar |
+| **Undo/Redo** | Use buttons at the top of the editor sidebar |
+| **Save layout** | Click Save in the editor sidebar (persists to localStorage) |
+| **Logout** | Click the logout icon in the sidebar, or via Settings |
 
 ---
 
 ## Project Structure
 
 ```
-pixel-office-web/
-├── server.js                  # Node proxy: OpenClaw auth, WS bridge, tool events
+office-web/
+├── server.js                    # Node proxy: OpenClaw auth, WS bridge, session auth
+├── .env.example                 # Environment variable template
 ├── src/
-│   ├── App.tsx                # Root component: chat state, ws status, layout
-│   ├── browserMock.ts         # WS client, event dispatch, auto-reconnect
+│   ├── App.tsx                  # Root component: routing, state management
+│   ├── main.tsx                 # React entry point
+│   ├── index.css                # Global styles + CSS variables
+│   ├── agentConfig.ts           # Agent registry (which agents appear on dashboard)
+│   ├── agentColors.ts           # Color palette per agent ID
+│   ├── browserMock.ts           # WebSocket client, event dispatch, auto-reconnect
+│   ├── constants.ts             # App constants
+│   ├── runtime.ts               # Runtime detection (browser vs Node)
 │   ├── components/
-│   │   ├── TerminalPanel.tsx  # Chat panel (markdown, streaming, connection dot)
-│   │   └── BottomToolbar.tsx  # Edit mode, debug toggle
+│   │   ├── navigation/
+│   │   │   ├── AppShell.tsx     # Orchestrator: Sidebar or MobileTabBar
+│   │   │   ├── Sidebar.tsx      # Desktop sidebar navigation
+│   │   │   ├── MobileTabBar.tsx # Mobile bottom tab bar
+│   │   │   ├── NavItem.tsx      # Reusable nav item component
+│   │   │   └── NavIcons.tsx     # SVG icon components
+│   │   ├── DashboardView.tsx    # Agent cards grid with live status
+│   │   ├── AgentCard.tsx        # Individual agent card component
+│   │   ├── ChatView.tsx         # Chat interface per agent
+│   │   ├── TerminalPanel.tsx    # Chat panel (markdown, streaming)
+│   │   ├── LoginScreen.tsx      # Authentication screen
+│   │   └── SettingsModal.tsx    # Settings dialog
 │   ├── hooks/
-│   │   ├── useExtensionMessages.ts  # All agent event processing
-│   │   └── useEditorActions.ts      # Layout editor logic
+│   │   ├── useExtensionMessages.ts  # Agent event processing from WebSocket
+│   │   ├── useEditorActions.ts      # Layout editor undo/redo/save logic
+│   │   └── useIsMobile.ts          # Responsive breakpoint hook
 │   └── office/
 │       ├── components/
-│       │   ├── OfficeCanvas.tsx     # Pixel canvas renderer
+│       │   ├── OfficeCanvas.tsx     # 2D canvas renderer
 │       │   └── ToolOverlay.tsx      # Speech bubbles over characters
-│       └── engine/
-│           └── officeState.ts       # Game state (outside React)
-├── public/assets/             # Sprites, floors, walls, furniture
-├── docs/                      # Detailed documentation
-└── AGENTS.md                  # Technical reference & learnings
+│       ├── editor/
+│       │   └── EditorToolbar.tsx    # Layout editor sidebar panel
+│       ├── engine/
+│       │   └── officeState.ts       # Game state (characters, furniture)
+│       ├── layout/                  # Furniture catalog & serialization
+│       └── sprites/                 # Character sprite management
+├── public/assets/               # Sprites, floors, walls, furniture images
+└── docs/                        # Detailed documentation
 ```
 
 ---
@@ -144,18 +273,30 @@ pixel-office-web/
 | [`docs/openclaw-protocol.md`](docs/openclaw-protocol.md) | WebSocket protocol, auth, all event types |
 | [`docs/frontend.md`](docs/frontend.md) | React components, hooks, canvas rendering |
 | [`docs/development.md`](docs/development.md) | Dev workflow, debugging, common issues |
-| [`docs/deploy-runtime.md`](docs/deploy-runtime.md) | Real deploy/runtime notes from Jarvis, including Linux container networking and pairing |
-| [`AGENTS.md`](AGENTS.md) | Bugs fixed, decisions, pending work |
+| [`docs/deploy-runtime.md`](docs/deploy-runtime.md) | Deploy notes, Linux container networking, pairing |
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| Frontend | React 19 + TypeScript + Vite |
+| Backend | Express 5 + WebSocket (ws) |
+| Rendering | Canvas 2D |
+| Markdown | Marked + highlight.js |
+| Auth | Session cookies (24h TTL) |
+| Styling | CSS variables, inline styles |
 
 ---
 
 ## Roadmap
 
-- [ ] Multi-session support — one character per active OpenClaw session
-- [ ] Reopen chat button in bottom toolbar
-- [ ] Clear conversation / new session button
-- [ ] Session labels on character name tags
+- [ ] Firebase Auth (Google Sign-In) for production auth
+- [ ] Admin UI for agent configuration (Firestore-backed)
+- [ ] Multi-workspace support
 - [ ] Dark/light theme toggle
+- [ ] Agent notifications (sound + desktop)
 
 ---
 

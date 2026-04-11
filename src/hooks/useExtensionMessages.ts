@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
+import { CONFIGURED_AGENTS } from '../agentConfig.js';
 import { playDoneSound, playStartSound, setSoundEnabled } from '../notificationSound.js';
 import type { OfficeState } from '../office/engine/officeState.js';
 import { setFloorSprites } from '../office/floorTiles.js';
@@ -127,6 +128,8 @@ export function useExtensionMessages(
           os.addAgent(p.id, p.palette, p.hueShift, p.seatId, true, p.folderName);
         }
         pendingAgents = [];
+        // Add offline placeholder characters for configured agents not yet connected
+        os.addOfflinePlaceholders(CONFIGURED_AGENTS);
         layoutReadyRef.current = true;
         setLayoutReady(true);
         if (msg.wasReset) {
@@ -171,7 +174,8 @@ export function useExtensionMessages(
         // Remove all sub-agent characters belonging to this agent
         os.removeAllSubagents(id);
         setSubagentCharacters((prev) => prev.filter((s) => s.parentAgentId !== id));
-        os.removeAgent(id);
+        const configuredFolders = new Set(CONFIGURED_AGENTS.map(c => c.folderName.toLowerCase()));
+        os.removeAgent(id, configuredFolders);
       } else if (msg.type === 'existingAgents') {
         const incoming = msg.agents as number[];
         const meta = (msg.agentMeta || {}) as Record<

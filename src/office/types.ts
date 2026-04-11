@@ -188,8 +188,10 @@ export interface Character {
   matrixEffectTimer: number;
   /** Per-column random seeds (16 values) for staggered rain timing */
   matrixEffectSeeds: number[];
-  /** Display name of the agent (e.g. "Jarvis", "Lexi") */
+  /** Display name of the agent (e.g. "Jarvis", "Dev") */
   folderName?: string;
   /** Full OpenClaw sessionKey (e.g. "agent:main:main") */
   sessionKey?: string;
+  /** True when character is an offline placeholder (configured but not connected) */
+  isOffline?: boolean;
 }

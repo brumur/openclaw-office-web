@@ -53,6 +53,9 @@ export class OfficeState {
   /** Reverse lookup: sub-agent character ID → parent info */
   subagentMeta: Map<number, { parentAgentId: number; parentToolId: string }> = new Map();
   private nextSubagentId = -1;
+  /** Maps folderName (lowercase) → offline placeholder character ID */
+  offlinePlaceholders: Map<string, number> = new Map();
+  private nextOfflineId = -1000;
 
   constructor(layout?: OfficeLayout) {
     this.layout = layout || createDefaultLayout();
@@ -270,23 +273,39 @@ export class OfficeState {
   ): void {
     if (this.characters.has(id)) return;
 
+    // Check if there's an offline placeholder to upgrade
+    let placeholderInfo: { palette: number; hueShift: number; seatId: string | null } | null = null;
+    if (folderName) {
+      placeholderInfo = this.upgradeOfflinePlaceholder(folderName);
+    }
+
     let palette: number;
     let hueShift: number;
     if (preferredPalette !== undefined) {
       palette = preferredPalette;
       hueShift = preferredHueShift ?? 0;
+    } else if (placeholderInfo) {
+      // Inherit appearance from the offline placeholder
+      palette = placeholderInfo.palette;
+      hueShift = placeholderInfo.hueShift;
     } else {
       const pick = this.pickDiversePalette();
       palette = pick.palette;
       hueShift = pick.hueShift;
     }
 
-    // Try preferred seat first, then any free seat
+    // Try preferred seat first, then placeholder's seat, then any free seat
     let seatId: string | null = null;
     if (preferredSeatId && this.seats.has(preferredSeatId)) {
       const seat = this.seats.get(preferredSeatId)!;
       if (!seat.assigned) {
         seatId = preferredSeatId;
+      }
+    }
+    if (!seatId && placeholderInfo?.seatId && this.seats.has(placeholderInfo.seatId)) {
+      const seat = this.seats.get(placeholderInfo.seatId)!;
+      if (!seat.assigned) {
+        seatId = placeholderInfo.seatId;
       }
     }
     if (!seatId) {
@@ -325,14 +344,23 @@ export class OfficeState {
     this.characters.set(id, ch);
   }
 
-  removeAgent(id: number): void {
+  removeAgent(id: number, configuredFolderNames?: Set<string>): void {
     const ch = this.characters.get(id);
     if (!ch) return;
     if (ch.matrixEffect === 'despawn') return; // already despawning
+
+    // If this is a configured agent, recreate as offline placeholder (keep same seat & appearance)
+    const isConfigured = ch.folderName && configuredFolderNames?.has(ch.folderName.toLowerCase());
+    if (isConfigured) {
+      // Save info before removing
+      this.addOfflinePlaceholderForAgent(ch);
+    }
+
     // Free seat and clear selection immediately
     if (ch.seatId) {
       const seat = this.seats.get(ch.seatId);
-      if (seat) seat.assigned = false;
+      // Only free seat if no placeholder claimed it
+      if (seat && !isConfigured) seat.assigned = false;
     }
     if (this.selectedAgentId === id) this.selectedAgentId = null;
     if (this.cameraFollowId === id) this.cameraFollowId = null;
@@ -341,6 +369,121 @@ export class OfficeState {
     ch.matrixEffectTimer = 0;
     ch.matrixEffectSeeds = matrixEffectSeeds();
     ch.bubbleType = null;
+  }
+
+  /**
+   * Add offline placeholder characters for configured agents not yet connected.
+   * These appear greyed-out in the office, seated at desks.
+   */
+  addOfflinePlaceholders(configs: Array<{ folderName: string }>): void {
+    // Collect folderNames already present (online agents)
+    const onlineFolders = new Set<string>();
+    for (const ch of this.characters.values()) {
+      if (ch.folderName) onlineFolders.add(ch.folderName.toLowerCase());
+    }
+
+    for (const cfg of configs) {
+      const key = cfg.folderName.toLowerCase();
+      if (onlineFolders.has(key)) continue; // already online
+      if (this.offlinePlaceholders.has(key)) continue; // already has placeholder
+
+      const id = this.nextOfflineId--;
+      const pick = this.pickDiversePalette();
+      const seatId = this.findFreeSeat();
+
+      let ch: Character;
+      if (seatId) {
+        const seat = this.seats.get(seatId)!;
+        seat.assigned = true;
+        ch = createCharacter(id, pick.palette, seatId, seat, pick.hueShift);
+      } else {
+        const spawn =
+          this.walkableTiles.length > 0
+            ? this.walkableTiles[Math.floor(Math.random() * this.walkableTiles.length)]
+            : { col: 1, row: 1 };
+        ch = createCharacter(id, pick.palette, null, null, pick.hueShift);
+        ch.x = spawn.col * TILE_SIZE + TILE_SIZE / 2;
+        ch.y = spawn.row * TILE_SIZE + TILE_SIZE / 2;
+        ch.tileCol = spawn.col;
+        ch.tileRow = spawn.row;
+      }
+
+      ch.folderName = cfg.folderName;
+      ch.isOffline = true;
+      ch.isActive = false;
+      ch.state = CharacterState.IDLE;
+      this.characters.set(id, ch);
+      this.offlinePlaceholders.set(key, id);
+    }
+  }
+
+  /**
+   * Remove an offline placeholder when the real agent connects.
+   * Returns the placeholder's seat info so the real agent can take the same seat.
+   */
+  upgradeOfflinePlaceholder(folderName: string): { palette: number; hueShift: number; seatId: string | null } | null {
+    const key = folderName.toLowerCase();
+    const placeholderId = this.offlinePlaceholders.get(key);
+    if (placeholderId === undefined) return null;
+
+    const ch = this.characters.get(placeholderId);
+    if (!ch) {
+      this.offlinePlaceholders.delete(key);
+      return null;
+    }
+
+    const result = { palette: ch.palette, hueShift: ch.hueShift, seatId: ch.seatId };
+
+    // Free the seat (the real agent will claim it)
+    if (ch.seatId) {
+      const seat = this.seats.get(ch.seatId);
+      if (seat) seat.assigned = false;
+    }
+
+    // Remove placeholder immediately (no despawn animation)
+    this.characters.delete(placeholderId);
+    this.offlinePlaceholders.delete(key);
+    return result;
+  }
+
+  /**
+   * Re-create an offline placeholder when an agent disconnects.
+   */
+  addOfflinePlaceholderForAgent(ch: Character): void {
+    if (!ch.folderName) return;
+    const key = ch.folderName.toLowerCase();
+    if (this.offlinePlaceholders.has(key)) return;
+
+    const id = this.nextOfflineId--;
+    const seatId = ch.seatId;
+
+    let newCh: Character;
+    if (seatId) {
+      const seat = this.seats.get(seatId);
+      if (seat) {
+        seat.assigned = true;
+        newCh = createCharacter(id, ch.palette, seatId, seat, ch.hueShift);
+      } else {
+        newCh = createCharacter(id, ch.palette, null, null, ch.hueShift);
+        newCh.x = ch.x;
+        newCh.y = ch.y;
+        newCh.tileCol = ch.tileCol;
+        newCh.tileRow = ch.tileRow;
+      }
+    } else {
+      newCh = createCharacter(id, ch.palette, null, null, ch.hueShift);
+      newCh.x = ch.x;
+      newCh.y = ch.y;
+      newCh.tileCol = ch.tileCol;
+      newCh.tileRow = ch.tileRow;
+    }
+
+    newCh.folderName = ch.folderName;
+    newCh.isOffline = true;
+    newCh.isActive = false;
+    newCh.state = CharacterState.IDLE;
+    this.characters.set(id, newCh);
+    this.offlinePlaceholders.set(key, id);
   }
 
   /** Find seat uid at a given tile position, or null */

@@ -4,7 +4,7 @@
 
 const RESIDENT_COLORS: Record<number, string> = {
   1: '#5a8cff', // Jarvis  — blue
-  2: '#f472b6', // (reserved)      — pink
+  2: '#f472b6', // (unused)         — pink
   3: '#4ade80', // Dev     — green
   4: '#fb923c', // Infra          — orange
   5: '#a78bfa', // support-agent  — purple

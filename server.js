@@ -130,21 +130,25 @@ let currentAgentId = 1;
 let bridgeStatus = 'connecting';
 
 // ── Resident session definitions ──────────────────────────────────────────────
-// These always appear in the office, even before any OpenClaw event arrives.
-// sessionKey must match the format OpenClaw uses in events (agent:<workspace>:<name>).
+// Known agent workspaces with fixed IDs for session routing.
+// `alwaysAnnounce: true` means the agent is announced as online immediately
+// (e.g. Jarvis is always running). Others are only announced when their first
+// OpenClaw event arrives, and can go offline (showing as placeholder in the office).
 const RESIDENTS = [
-  { id: 1, name: 'Jarvis', sessionKey: 'agent:main:main'   },
-  { id: 2, name: 'Lexi',   sessionKey: 'agent:lexi:lexi'   },
-  { id: 3, name: 'Dev',    sessionKey: 'agent:dev:dev'     },
-  { id: 4, name: 'Infra',  sessionKey: 'agent:infra:infra' },
+  { id: 1, name: 'Jarvis', sessionKey: 'agent:main:main',   alwaysAnnounce: true  },
+  { id: 3, name: 'Dev',    sessionKey: 'agent:dev:dev',     alwaysAnnounce: false },
+  { id: 4, name: 'Infra',  sessionKey: 'agent:infra:infra', alwaysAnnounce: false },
 ];
 
-let nextAgentId = RESIDENTS.length + 1;
+let nextAgentId = Math.max(...RESIDENTS.map(r => r.id)) + 1;
 
 // Session registry: maps full sessionKey <-> agentId
 // We only use full keys to avoid collisions (e.g. agent:dev:main vs agent:main:main both have "main")
 const sessionToAgent = new Map();
 const agentToSession = new Map(); // agentId -> full sessionKey (for chat.send)
+
+// Track which residents have been announced to clients
+const announcedResidents = new Set();
 
 // Subagent dot correlation:
 // When an Agent/Task tool fires, push { parentAgentId, parentToolId } to this queue.
@@ -163,7 +167,7 @@ function isSubagentSession(sessionKey) {
 }
 
 // Derive a human-readable label from a full sessionKey
-// "agent:lexi:whatsapp:direct:+556..." → "lexi", "agent:main:main" → "main"
+// "agent:dev:whatsapp:direct:+556..." → "dev", "agent:main:main" → "main"
 function sessionLabel(evtSession) {
   const parts = evtSession.split(':');
   return parts.length >= 2 ? parts[1] : evtSession;
@@ -174,7 +178,6 @@ function sessionLabel(evtSession) {
 //   agent:main:main             → Jarvis (exact match only)
 //   agent:main:subagent:<UUID>  → new anonymous character (Jarvis's subagent)
 //   agent:dev:*                 → Dev resident (any session in dev workspace)
-//   agent:lexi:*                → Lexi resident (any session in lexi workspace)
 //   agent:infra:*               → Infra resident (any session in infra workspace)
 function residentForSession(evtSession) {
   const parts = evtSession.split(':');
@@ -185,7 +188,7 @@ function residentForSession(evtSession) {
     // For main workspace: only exact match routes to Jarvis;
     // subagents of main (agent:main:subagent:*) get their own new character
     if (workspace === 'main') return evtSession === r.sessionKey;
-    // For all other workspaces (dev, lexi, infra): any session → resident
+    // For all other workspaces (dev, infra, etc.): any session → resident
     return true;
   }) ?? null;
 }
@@ -233,10 +236,16 @@ function broadcast(msg) {
 }
 
 function sendResidents(target = null) {
-  const payloads = RESIDENTS.flatMap((r) => [
-    { type: 'agentCreated', id: r.id, name: r.name, sessionKey: r.sessionKey, resident: true },
-    { type: 'agentStatus', id: r.id, status: 'idle' },
-  ]);
+  // Only announce residents marked as alwaysAnnounce (e.g. Jarvis).
+  // Other residents will be announced when their first OpenClaw event arrives.
+  const alwaysOn = RESIDENTS.filter((r) => r.alwaysAnnounce);
+  const payloads = alwaysOn.flatMap((r) => {
+    announcedResidents.add(r.id);
+    return [
+      { type: 'agentCreated', id: r.id, name: r.name, sessionKey: r.sessionKey, resident: true, folderName: r.name.toLowerCase() },
+      { type: 'agentStatus', id: r.id, status: 'idle' },
+    ];
+  });
   if (target) {
     for (const msg of payloads) {
       if (target.readyState === WebSocket.OPEN) target.send(JSON.stringify(msg));
@@ -408,6 +417,12 @@ function connectToOpenClaw() {
             // Route to existing resident — different sessionKey, same workspace
             sessionToAgent.set(evtSession, knownResident.id);
             console.log(`[Session] "${evtSession}" → resident "${knownResident.name}" (agentId=${knownResident.id})`);
+            // If this resident wasn't announced yet (non-alwaysAnnounce), announce now
+            if (!announcedResidents.has(knownResident.id)) {
+              announcedResidents.add(knownResident.id);
+              broadcast({ type: 'agentCreated', id: knownResident.id, name: knownResident.name, sessionKey: knownResident.sessionKey, resident: false, folderName: knownResident.name.toLowerCase() });
+              console.log(`[Session] Announcing resident "${knownResident.name}" (discovered via OpenClaw event)`);
+            }
           } else {
             // Genuinely new session — create a new agent
             const newId = nextAgentId++;
@@ -415,7 +430,7 @@ function connectToOpenClaw() {
             sessionToAgent.set(evtSession, newId);
             agentToSession.set(newId, evtSession);
             const resident = false;
-            broadcast({ type: 'agentCreated', id: newId, name: label, sessionKey: evtSession, resident });
+            broadcast({ type: 'agentCreated', id: newId, name: label, sessionKey: evtSession, resident, folderName: label });
             broadcast({ type: 'agentStatus', id: newId, status: 'idle' });
             console.log(`[Session] New session "${evtSession}" (label: ${label}) → agentId=${newId}`);
           }

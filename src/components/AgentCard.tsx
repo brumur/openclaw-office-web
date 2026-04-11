@@ -60,7 +60,7 @@ const CHANNEL_ICONS: Record<string, string> = {
 };
 
 function parseChannelFromSessionKey(sessionKey: string): string | null {
-  // agent:lexi:whatsapp:+55... → 'whatsapp'
+  // agent:dev:whatsapp:+55... → 'whatsapp'
   const parts = sessionKey.split(':');
   if (parts.length >= 3) {
     const channel = parts[2].toLowerCase();

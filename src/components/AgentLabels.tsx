@@ -59,8 +59,9 @@ export function AgentLabels({
     subLabelMap.set(sub.id, sub.label);
   }
 
-  // All character IDs to render labels for (regular agents + sub-agents)
-  const allIds = [...agents, ...subagentCharacters.map((s) => s.id)];
+  // All character IDs to render labels for (regular agents + sub-agents + offline placeholders)
+  const offlineIds = [...officeState.offlinePlaceholders.values()];
+  const allIds = [...agents, ...subagentCharacters.map((s) => s.id), ...offlineIds];
 
   return (
     <>
@@ -77,6 +78,7 @@ export function AgentLabels({
         const isWaiting = status === 'waiting';
         const isActive = ch.isActive;
         const isSub = ch.isSubagent;
+        const isOffline = ch.isOffline === true;
 
         const color = agentColor(id);
         let dotColor = 'transparent';
@@ -144,7 +146,8 @@ export function AgentLabels({
               style={{
                 fontSize: isSub ? '16px' : '18px',
                 fontStyle: isSub ? 'italic' : undefined,
-                color: 'var(--pixel-text)',
+                color: isOffline ? 'var(--pixel-text-dim)' : 'var(--pixel-text)',
+                opacity: isOffline ? 0.5 : 1,
                 background: 'rgba(30,30,46,0.7)',
                 padding: '1px 4px',
                 borderRadius: 2,

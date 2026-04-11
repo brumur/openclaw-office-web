@@ -94,6 +94,9 @@ export function updateCharacter(
   tileMap: TileTypeVal[][],
   blockedTiles: Set<string>,
 ): void {
+  // Offline placeholders stay frozen in idle pose — no animation or wandering
+  if (ch.isOffline) return;
+
   ch.frameTimer += dt;
 
   switch (ch.state) {

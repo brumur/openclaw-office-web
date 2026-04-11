@@ -193,12 +193,27 @@ export function renderScene(
       });
     }
 
-    drawables.push({
-      zY: charZY,
-      draw: (c) => {
-        c.drawImage(cached, drawX, drawY);
-      },
-    });
+    // Offline placeholder characters render semi-transparent
+    if (ch.isOffline) {
+      const oDrawX = drawX;
+      const oDrawY = drawY;
+      drawables.push({
+        zY: charZY,
+        draw: (c) => {
+          c.save();
+          c.globalAlpha = 0.35;
+          c.drawImage(cached, oDrawX, oDrawY);
+          c.restore();
+        },
+      });
+    } else {
+      drawables.push({
+        zY: charZY,
+        draw: (c) => {
+          c.drawImage(cached, drawX, drawY);
+        },
+      });
+    }
   }
 
   // Sort by Y (lower = in front = drawn later)
