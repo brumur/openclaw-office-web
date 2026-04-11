@@ -4,7 +4,7 @@
 
 const RESIDENT_COLORS: Record<number, string> = {
   1: '#5a8cff', // Jarvis  — blue
-  2: '#f472b6', // Lexi    — pink
+  2: '#f472b6', // data-custodian — pink
   3: '#4ade80', // Dev     — green
   4: '#fb923c', // Infra   — orange
 };
