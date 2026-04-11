@@ -8,6 +8,7 @@ const RESIDENT_COLORS: Record<number, string> = {
   3: '#4ade80', // Dev     — green
   4: '#fb923c', // Infra          — orange
   5: '#a78bfa', // support-agent  — purple
+  6: '#38bdf8', // qa-tester      — sky blue
 };
 
 const DYNAMIC_PALETTE = ['#a78bfa', '#38bdf8', '#fbbf24', '#34d399', '#f87171'];
