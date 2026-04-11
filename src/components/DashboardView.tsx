@@ -1,4 +1,5 @@
 import type { ChatMessage } from '../App.js';
+import { CONFIGURED_AGENTS } from '../agentConfig.js';
 import type { OfficeState } from '../office/engine/officeState.js';
 import type { ToolActivity } from '../office/types.js';
 
@@ -28,13 +29,6 @@ const gridStyle: React.CSSProperties = {
   gap: 14,
 };
 
-const emptyStyle: React.CSSProperties = {
-  fontSize: 14,
-  color: 'var(--pixel-text-dim)',
-  textAlign: 'center',
-  padding: '60px 20px',
-};
-
 export function DashboardView({
   officeState,
   agents,
@@ -56,60 +50,77 @@ export function DashboardView({
     zIndex: 1,
     transition: 'padding-left 0.2s ease',
   };
-  // Collect all sessionKeys associated with each agent (for channel badges)
-  const agentSessionKeys: Record<number, string[]> = {};
-  for (const ch of officeState.characters.values()) {
-    if (ch.isSubagent) continue;
-    if (!ch.sessionKey) continue;
-    const id = ch.id;
-    if (!agentSessionKeys[id]) agentSessionKeys[id] = [];
-    agentSessionKeys[id].push(ch.sessionKey);
+
+  // Build a map of folderName → agent id for connected agents
+  const folderToId = new Map<string, number>();
+  for (const id of agents) {
+    const ch = officeState.characters.get(id);
+    if (!ch || ch.isSubagent) continue;
+    const fn = (ch.folderName ?? '').toLowerCase();
+    if (fn) folderToId.set(fn, id);
   }
 
-  // Also check subagent sessions that map to parent agents
-  for (const [, meta] of officeState.subagentMeta) {
-    const parentChar = officeState.characters.get(meta.parentAgentId);
-    if (parentChar?.sessionKey) {
-      // Already added from main loop
-    }
+  // Collect session keys for channel badges
+  const agentSessionKeys: Record<number, string[]> = {};
+  for (const ch of officeState.characters.values()) {
+    if (ch.isSubagent || !ch.sessionKey) continue;
+    if (!agentSessionKeys[ch.id]) agentSessionKeys[ch.id] = [];
+    agentSessionKeys[ch.id].push(ch.sessionKey);
   }
+
+  // Track which connected agents were matched to a config entry
+  const matchedIds = new Set<number>();
+
+  // Build cards from CONFIGURED_AGENTS (preserves order, shows offline ones)
+  const configuredCards = CONFIGURED_AGENTS.map((cfg) => {
+    const matchId = folderToId.get(cfg.folderName.toLowerCase());
+    if (matchId != null) {
+      matchedIds.add(matchId);
+      const ch = officeState.characters.get(matchId)!;
+      const status = agentStatuses[matchId] ?? 'active';
+      const tools = agentTools[matchId] ?? [];
+      const msgs = messagesByAgent[matchId] ?? [];
+      const lastMessage = msgs.length > 0 ? msgs[msgs.length - 1] : undefined;
+      const isStreaming = lastMessage?.streaming === true;
+      const channels = getChannelsFromSessions(agentSessionKeys[matchId] ?? []);
+
+      return (
+        <AgentCard
+          key={`cfg-${cfg.folderName}`}
+          id={matchId}
+          name={cfg.name}
+          sessionKey={ch.sessionKey}
+          status={status}
+          tools={tools}
+          lastMessage={lastMessage}
+          isStreaming={isStreaming}
+          channelSessions={channels}
+          onOpenChat={onOpenChat}
+        />
+      );
+    }
+
+    // Offline — configured but not connected
+    return (
+      <AgentCard
+        key={`cfg-${cfg.folderName}`}
+        id={-1}
+        name={cfg.name}
+        status="idle"
+        tools={[]}
+        isOffline
+        channelSessions={[]}
+        onOpenChat={onOpenChat}
+      />
+    );
+  });
 
   return (
     <div style={containerStyle} className="pixel-chat-scroll">
       <div style={headerStyle}>Dashboard</div>
-      {agents.length === 0 ? (
-        <div style={emptyStyle}>Nenhum agente conectado.</div>
-      ) : (
-        <div style={gridStyle}>
-          {agents.map((id) => {
-            const ch = officeState.characters.get(id);
-            if (!ch || ch.isSubagent) return null;
-            const name = ch.folderName ?? `Agent #${id}`;
-            const status = agentStatuses[id] ?? 'active';
-            const tools = agentTools[id] ?? [];
-            const msgs = messagesByAgent[id] ?? [];
-            const lastMessage = msgs.length > 0 ? msgs[msgs.length - 1] : undefined;
-            const isStreaming = lastMessage?.streaming === true;
-            const sessionKeys = agentSessionKeys[id] ?? [];
-            const channels = getChannelsFromSessions(sessionKeys);
-
-            return (
-              <AgentCard
-                key={id}
-                id={id}
-                name={name}
-                sessionKey={ch.sessionKey}
-                status={status}
-                tools={tools}
-                lastMessage={lastMessage}
-                isStreaming={isStreaming}
-                channelSessions={channels}
-                onOpenChat={onOpenChat}
-              />
-            );
-          })}
-        </div>
-      )}
+      <div style={gridStyle}>
+        {configuredCards}
+      </div>
     </div>
   );
 }

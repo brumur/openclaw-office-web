@@ -9,13 +9,15 @@ interface AgentCardProps {
   tools: ToolActivity[];
   lastMessage?: ChatMessage;
   isStreaming?: boolean; // true when agent is writing a response
+  isOffline?: boolean;   // true when agent is configured but not connected
   channelSessions: string[]; // e.g. ['whatsapp', 'teams']
   onOpenChat: (id: number) => void;
 }
 
-type ResolvedStatus = 'idle' | 'thinking' | 'executing' | 'writing' | 'waiting';
+type ResolvedStatus = 'idle' | 'thinking' | 'executing' | 'writing' | 'waiting' | 'offline';
 
 const STATUS_COLORS: Record<ResolvedStatus, string> = {
+  offline: '#4b5563',     // dark gray — not connected
   idle: '#6b7280',
   thinking: '#a78bfa',    // purple — processing/reasoning
   executing: '#5ac88c',   // green — running tools
@@ -24,6 +26,7 @@ const STATUS_COLORS: Record<ResolvedStatus, string> = {
 };
 
 const STATUS_LABELS: Record<ResolvedStatus, string> = {
+  offline: 'Offline',
   idle: 'Inativo',
   thinking: 'Pensando...',
   executing: 'Executando',
@@ -77,6 +80,7 @@ export function getChannelsFromSessions(sessionKeys: string[]): string[] {
 
 /** Card border + subtle background glow per status */
 const STATUS_BORDER: Record<ResolvedStatus, string> = {
+  offline: 'rgba(75, 85, 99, 0.4)',
   idle: 'var(--pixel-border)',
   thinking: '#a78bfa',
   executing: '#5ac88c',
@@ -85,6 +89,7 @@ const STATUS_BORDER: Record<ResolvedStatus, string> = {
 };
 
 const STATUS_BG: Record<ResolvedStatus, string> = {
+  offline: 'rgba(75, 85, 99, 0.05)',
   idle: 'var(--pixel-agent-bg, var(--pixel-bg))',
   thinking: 'rgba(167, 139, 250, 0.08)',
   executing: 'rgba(90, 200, 140, 0.08)',
@@ -184,11 +189,12 @@ export function AgentCard({
   tools,
   lastMessage,
   isStreaming = false,
+  isOffline = false,
   channelSessions,
   onOpenChat,
 }: AgentCardProps) {
   const activeTools = tools.filter((t) => !t.done);
-  const resolved = resolveStatus(status, activeTools.length, isStreaming);
+  const resolved = isOffline ? 'offline' as ResolvedStatus : resolveStatus(status, activeTools.length, isStreaming);
   const statusColor = STATUS_COLORS[resolved];
   const statusLabel = STATUS_LABELS[resolved];
   const isAnimated = resolved !== 'idle';
@@ -276,12 +282,15 @@ export function AgentCard({
 
       {/* Chat button */}
       <button
-        style={chatBtnStyle}
-        onClick={() => onOpenChat(id)}
-        onMouseEnter={(e) => { (e.target as HTMLElement).style.filter = 'brightness(0.85)'; }}
-        onMouseLeave={(e) => { (e.target as HTMLElement).style.filter = ''; }}
+        style={{
+          ...chatBtnStyle,
+          ...(isOffline ? { opacity: 0.35, cursor: 'default' } : {}),
+        }}
+        onClick={isOffline ? undefined : () => onOpenChat(id)}
+        onMouseEnter={isOffline ? undefined : (e) => { (e.target as HTMLElement).style.filter = 'brightness(0.85)'; }}
+        onMouseLeave={isOffline ? undefined : (e) => { (e.target as HTMLElement).style.filter = ''; }}
       >
-        Chat
+        {isOffline ? 'Offline' : 'Chat'}
       </button>
     </div>
   );
