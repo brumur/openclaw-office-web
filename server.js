@@ -135,9 +135,16 @@ let bridgeStatus = 'connecting';
 // (e.g. Jarvis is always running). Others are only announced when their first
 // OpenClaw event arrives, and can go offline (showing as placeholder in the office).
 const RESIDENTS = [
-  { id: 1, name: 'Jarvis', sessionKey: 'agent:main:main',   alwaysAnnounce: true },
-  { id: 3, name: 'Dev',    sessionKey: 'agent:dev:dev',     alwaysAnnounce: true },
-  { id: 4, name: 'Infra',  sessionKey: 'agent:infra:infra', alwaysAnnounce: true },
+  { id: 1,  name: 'Jarvis',            sessionKey: 'agent:main:main',              alwaysAnnounce: true },
+  { id: 3,  name: 'Dev',               sessionKey: 'agent:dev:dev',                alwaysAnnounce: true },
+  { id: 4,  name: 'Infra',             sessionKey: 'agent:infra:infra',            alwaysAnnounce: true },
+  { id: 5,  name: 'support-agent',     sessionKey: 'agent:main:support-agent',     alwaysAnnounce: true },
+  { id: 6,  name: 'qa-tester',         sessionKey: 'agent:main:qa-tester',         alwaysAnnounce: true },
+  { id: 7,  name: 'data-custodian',    sessionKey: 'agent:main:data-custodian',    alwaysAnnounce: true },
+  { id: 8,  name: 'service-ops',       sessionKey: 'agent:main:service-ops',       alwaysAnnounce: true },
+  { id: 9,  name: 'analytics',         sessionKey: 'agent:main:analytics',         alwaysAnnounce: true },
+  { id: 10, name: 'security-watchdog', sessionKey: 'agent:main:security-watchdog', alwaysAnnounce: true },
+  { id: 11, name: 'change-manager',    sessionKey: 'agent:main:change-manager',    alwaysAnnounce: true },
 ];
 
 let nextAgentId = Math.max(...RESIDENTS.map(r => r.id)) + 1;
