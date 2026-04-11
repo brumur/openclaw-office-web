@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { agentColor } from './agentColors.js';
-import { BottomToolbar } from './components/BottomToolbar.js';
 import { DebugView } from './components/DebugView.js';
 import { ZoomControls } from './components/ZoomControls.js';
 import { PULSE_ANIMATION_DURATION_SEC } from './constants.js';
@@ -20,8 +19,11 @@ import { vscode } from './vscodeApi.js';
 
 import { AgentLabels } from './components/AgentLabels.js';
 import { CameraIndicator } from './components/CameraIndicator.js';
+import { ChatView } from './components/ChatView.js';
+import { DashboardView } from './components/DashboardView.js';
 import { LoginScreen } from './components/LoginScreen.js';
-import { TerminalPanel } from './components/TerminalPanel.js';
+import { AppShell, useNavLayout } from './components/navigation/AppShell.js';
+import { useIsMobile } from './hooks/useIsMobile.js';
 
 // Game state lives outside React — updated imperatively by message handlers
 const officeStateRef = { current: null as OfficeState | null };
@@ -128,6 +130,7 @@ function EditActionBar({
 
 export type ChatMessage = { role: 'user' | 'assistant'; text: string; streaming?: boolean };
 export type WsStatus = 'connecting' | 'connected' | 'disconnected';
+export type ActiveView = 'office' | 'dashboard' | 'chat';
 
 const CHAT_STORAGE_KEY = 'pixel-office-chat-v2';
 
@@ -169,6 +172,20 @@ function App() {
   const [isTerminalOpen, setIsTerminalOpen] = useState(false);
   const [chatHeight, setChatHeight] = useState(320);
   const [wsStatus, setWsStatus] = useState<WsStatus>('connecting');
+  const [activeView, setActiveView] = useState<ActiveView>('office');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    try { return localStorage.getItem('pixel-sidebar-collapsed') === 'true'; } catch { return false; }
+  });
+  const isMobile = useIsMobile();
+  const { sidebarWidth, bottomOffset } = useNavLayout(isMobile, sidebarCollapsed, activeView);
+
+  const handleToggleSidebar = useCallback(() => {
+    setSidebarCollapsed((prev) => {
+      const next = !prev;
+      try { localStorage.setItem('pixel-sidebar-collapsed', String(next)); } catch { /* ignore */ }
+      return next;
+    });
+  }, []);
 
   // Keep a ref so the message handler always sees the current selected agent
   const selectedChatAgentIdRef = useRef(selectedChatAgentId);
@@ -329,7 +346,7 @@ function App() {
   const handleSelectChatAgent = useCallback((id: number) => {
     setSelectedChatAgentId(id);
     setUnreadByAgent((prev) => ({ ...prev, [id]: 0 }));
-    setIsTerminalOpen(true);
+    setActiveView('chat');
   }, []);
 
   const handleDeselectAgent = useCallback(() => {
@@ -417,8 +434,22 @@ function App() {
         .pixel-chat-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.22); }
       `}</style>
 
+      {/* Dashboard view — alternative to office */}
+      {activeView === 'dashboard' && (
+        <DashboardView
+          officeState={officeState}
+          agents={agents}
+          agentStatuses={agentStatuses}
+          agentTools={agentTools}
+          messagesByAgent={messagesByAgent}
+          onOpenChat={handleSelectChatAgent}
+          sidebarWidth={sidebarWidth}
+          bottomOffset={bottomOffset}
+        />
+      )}
+
       {/* Game area — always full size, chat overlays on top */}
-      <div ref={containerRef} style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
+      <div ref={containerRef} style={{ position: 'absolute', inset: 0, overflow: 'hidden', display: activeView === 'office' ? undefined : 'none' }}>
         <OfficeCanvas
           officeState={officeState}
           onClick={handleClick}
@@ -450,17 +481,7 @@ function App() {
           }}
         />
 
-        <BottomToolbar
-          isEditMode={editor.isEditMode}
-          onToggleEditMode={editor.handleToggleEditMode}
-          isDebugMode={isDebugMode}
-          onToggleDebugMode={handleToggleDebugMode}
-          alwaysShowOverlay={alwaysShowOverlay}
-          onToggleAlwaysShowOverlay={handleToggleAlwaysShowOverlay}
-          onOpenChat={() => setIsTerminalOpen(true)}
-          onClearHistory={handleClearHistory}
-          unreadCount={chatOpen ? 0 : Object.values(unreadByAgent).reduce((a, b) => a + b, 0)}
-        />
+        {/* BottomToolbar moved outside container div for cross-view visibility */}
 
         {editor.isEditMode && editor.isDirty && (
           <EditActionBar editor={editor} editorState={editorState} />
@@ -558,22 +579,38 @@ function App() {
         )}
       </div>
 
-      {/* Chat panel — floating overlay, does not push the canvas */}
-      {chatOpen && (
-        <TerminalPanel
-          messages={selectedChatAgentId !== null ? (messagesByAgent[selectedChatAgentId] ?? []) : []}
-          onSend={handleSendInput}
-          onClose={() => setIsTerminalOpen(false)}
-          wsStatus={wsStatus}
+      {/* Navigation — sidebar (desktop) or tab bar (mobile) */}
+      <AppShell
+        activeView={activeView}
+        onSetActiveView={setActiveView}
+        sidebarCollapsed={sidebarCollapsed}
+        onToggleSidebar={handleToggleSidebar}
+        isEditMode={editor.isEditMode}
+        onToggleEditMode={editor.handleToggleEditMode}
+        onOpenChat={() => setActiveView('chat')}
+        unreadCount={activeView === 'chat' ? 0 : Object.values(unreadByAgent).reduce((a, b) => a + b, 0)}
+        isDebugMode={isDebugMode}
+        onToggleDebugMode={handleToggleDebugMode}
+        alwaysShowOverlay={alwaysShowOverlay}
+        onToggleAlwaysShowOverlay={handleToggleAlwaysShowOverlay}
+        onClearHistory={handleClearHistory}
+      />
+
+      {/* Chat view — full screen */}
+      {activeView === 'chat' && (
+        <ChatView
+          messagesByAgent={messagesByAgent}
           agentTabs={agentTabs}
           selectedChatAgentId={selectedChatAgentId}
           onSelectAgent={handleSelectChatAgent}
+          onSend={handleSendInput}
+          wsStatus={wsStatus}
+          sidebarWidth={sidebarWidth}
+          bottomOffset={bottomOffset}
           onLogout={async () => {
             await fetch('/api/logout', { method: 'POST', credentials: 'include' });
             setIsAuthenticated(false);
           }}
-          height={chatHeight}
-          onHeightChange={setChatHeight}
         />
       )}
 

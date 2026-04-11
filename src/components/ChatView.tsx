@@ -1,6 +1,6 @@
 import hljs from 'highlight.js';
 import { marked, Renderer } from 'marked';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { agentColor } from '../agentColors.js';
 import type { ChatMessage, WsStatus } from '../App.js';
@@ -23,18 +23,16 @@ export interface AgentTab {
   unread: number;
 }
 
-interface TerminalPanelProps {
-  messages: ChatMessage[];
-  onSend: (text: string) => void;
-  onClose: () => void;
-  wsStatus: WsStatus;
+interface ChatViewProps {
+  messagesByAgent: Record<number, ChatMessage[]>;
   agentTabs: AgentTab[];
   selectedChatAgentId: number | null;
   onSelectAgent: (id: number) => void;
-  onLogout?: () => void;
-  height: number;
-  onHeightChange: (h: number) => void;
+  onSend: (text: string) => void;
+  wsStatus: WsStatus;
+  sidebarWidth?: number;
   bottomOffset?: number;
+  onLogout?: () => void;
 }
 
 const STATUS_DOT: Record<WsStatus, { color: string; pulse: boolean }> = {
@@ -43,42 +41,46 @@ const STATUS_DOT: Record<WsStatus, { color: string; pulse: boolean }> = {
   disconnected: { color: '#f87171', pulse: false },
 };
 
-export function TerminalPanel({
-  messages,
-  onSend,
-  onClose,
-  wsStatus,
+export function ChatView({
+  messagesByAgent,
   agentTabs,
   selectedChatAgentId,
   onSelectAgent,
-  onLogout,
-  height,
-  onHeightChange,
+  onSend,
+  wsStatus,
+  sidebarWidth = 0,
   bottomOffset = 0,
-}: TerminalPanelProps) {
+  onLogout,
+}: ChatViewProps) {
   const [input, setInput] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const dot = STATUS_DOT[wsStatus];
+
+  const messages = selectedChatAgentId !== null ? (messagesByAgent[selectedChatAgentId] ?? []) : [];
   const activeTab = agentTabs.find((t) => t.id === selectedChatAgentId);
   const activeColor = activeTab?.color ?? agentColor(selectedChatAgentId ?? 1);
   const activeName = activeTab?.name ?? 'OpenClaw';
-
-  const [visible, setVisible] = useState(false);
-  useEffect(() => { requestAnimationFrame(() => setVisible(true)); }, []);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSubmit = () => {
+  // Auto-select first agent if none selected
+  useEffect(() => {
+    if (selectedChatAgentId === null && agentTabs.length > 0) {
+      onSelectAgent(agentTabs[0].id);
+    }
+  }, [selectedChatAgentId, agentTabs, onSelectAgent]);
+
+  const handleSubmit = useCallback(() => {
     const trimmed = input.trim();
-    if (trimmed) {
+    if (trimmed && selectedChatAgentId !== null) {
       onSend(trimmed);
       setInput('');
       if (inputRef.current) inputRef.current.style.height = 'auto';
     }
-  };
+  }, [input, selectedChatAgentId, onSend]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -87,71 +89,27 @@ export function TerminalPanel({
     }
   };
 
-  // Drag handle — resize height from top edge
-  const dragRef = useRef<{ startY: number; startHeight: number } | null>(null);
-  const handleDragStart = (e: React.MouseEvent) => {
-    e.preventDefault();
-    dragRef.current = { startY: e.clientY, startHeight: height };
-    const onMove = (ev: MouseEvent) => {
-      if (!dragRef.current) return;
-      const delta = dragRef.current.startY - ev.clientY;
-      onHeightChange(Math.min(600, Math.max(180, dragRef.current.startHeight + delta)));
-    };
-    const onUp = () => {
-      dragRef.current = null;
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onUp);
-    };
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
+  const containerStyle: React.CSSProperties = {
+    position: 'absolute',
+    inset: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    background: 'var(--pixel-bg)',
+    paddingLeft: sidebarWidth,
+    paddingBottom: bottomOffset,
+    transition: 'padding-left 0.2s ease',
+    zIndex: 1,
+    fontFamily: CHAT_FONT,
   };
 
   return (
-    <div
-      style={{
-        position: 'absolute',
-        bottom: bottomOffset, left: 0, right: 0,
-        height,
-        background: 'rgba(12, 12, 24, 0.92)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-        borderTop: '1px solid rgba(255,255,255,0.1)',
-        display: 'flex',
-        flexDirection: 'column',
-        zIndex: 150,
-        transform: visible ? 'translateY(0)' : 'translateY(100%)',
-        transition: 'transform 0.28s cubic-bezier(0.22, 1, 0.36, 1)',
-        fontFamily: CHAT_FONT,
-      }}
-    >
-      {/* Drag handle */}
-      <div
-        onMouseDown={handleDragStart}
-        style={{
-          position: 'absolute',
-          top: -4, left: 0, right: 0,
-          height: 8,
-          cursor: 'row-resize',
-          zIndex: 10,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <div style={{
-          width: 40, height: 3,
-          borderRadius: 2,
-          background: 'rgba(255,255,255,0.2)',
-          marginTop: 4,
-        }} />
-      </div>
-
-      {/* Tab bar + controls */}
+    <div style={containerStyle}>
+      {/* Agent tabs header */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
         borderBottom: '1px solid rgba(255,255,255,0.08)',
-        background: 'rgba(0,0,0,0.3)',
+        background: 'rgba(0,0,0,0.2)',
         flexShrink: 0,
         overflowX: 'auto',
         scrollbarWidth: 'none',
@@ -168,9 +126,10 @@ export function TerminalPanel({
                 background: isActive ? 'rgba(255,255,255,0.06)' : 'none',
                 border: 'none',
                 borderBottom: isActive ? `2px solid ${tab.color}` : '2px solid transparent',
+                borderRadius: 0,
                 color: isActive ? '#fff' : 'rgba(255,255,255,0.4)',
                 cursor: 'pointer',
-                padding: '10px 18px',
+                padding: '14px 20px',
                 fontSize: 14,
                 fontFamily: CHAT_FONT,
                 fontWeight: isActive ? 600 : 400,
@@ -178,12 +137,12 @@ export function TerminalPanel({
                 flexShrink: 0,
                 display: 'flex',
                 alignItems: 'center',
-                gap: 7,
+                gap: 8,
                 transition: 'color 0.15s, border-color 0.15s, background 0.15s',
               }}
             >
               <span style={{
-                width: 7, height: 7, borderRadius: '50%',
+                width: 8, height: 8, borderRadius: '50%',
                 background: isActive ? tabDot.color : tab.color,
                 flexShrink: 0,
                 opacity: isActive ? 1 : 0.4,
@@ -194,7 +153,7 @@ export function TerminalPanel({
                 <span style={{
                   background: '#f87171', color: '#fff',
                   fontSize: 10, borderRadius: 10,
-                  padding: '1px 5px', lineHeight: 1.4,
+                  padding: '1px 6px', lineHeight: 1.4,
                 }}>
                   {tab.unread > 9 ? '9+' : tab.unread}
                 </span>
@@ -205,15 +164,28 @@ export function TerminalPanel({
 
         {/* Spacer + right controls */}
         <div style={{ flex: 1 }} />
-        <div style={{ display: 'flex', gap: 4, padding: '0 10px', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 16px', flexShrink: 0 }}>
+          {/* Connection status */}
+          <span style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            fontSize: 12, color: dot.color,
+          }}>
+            <span style={{
+              width: 8, height: 8, borderRadius: '50%',
+              background: dot.color,
+              animation: dot.pulse ? 'pixel-agents-pulse 1s ease-in-out infinite' : 'none',
+            }} />
+            {wsStatus === 'connected' ? 'Online' : wsStatus === 'connecting' ? 'Conectando...' : 'Offline'}
+          </span>
           {onLogout && (
-            <button onClick={onLogout} title="Sair" style={iconBtn}>⏏</button>
+            <button onClick={onLogout} title="Sair" style={iconBtnStyle}>
+              Sair
+            </button>
           )}
-          <button onClick={onClose} title="Fechar" style={iconBtn}>✕</button>
         </div>
       </div>
 
-      {/* Messages */}
+      {/* Messages area */}
       <div
         className="pixel-chat-scroll"
         style={{
@@ -221,11 +193,14 @@ export function TerminalPanel({
           overflowY: 'auto',
           scrollbarWidth: 'thin',
           scrollbarColor: 'rgba(255,255,255,0.08) transparent',
-          padding: '14px 24px',
+          padding: '20px 24px',
           display: 'flex',
           flexDirection: 'column',
           gap: 2,
           minHeight: 0,
+          maxWidth: 800,
+          width: '100%',
+          margin: '0 auto',
         }}
         onClick={() => inputRef.current?.focus()}
       >
@@ -234,8 +209,8 @@ export function TerminalPanel({
             background: wsStatus === 'disconnected' ? 'rgba(248,113,113,0.1)' : 'rgba(250,204,21,0.08)',
             border: `1px solid ${wsStatus === 'disconnected' ? '#f8717155' : '#facc1555'}`,
             color: wsStatus === 'disconnected' ? '#f87171' : '#facc15',
-            fontSize: 13, padding: '7px 12px', borderRadius: 8, textAlign: 'center',
-            marginBottom: 8,
+            fontSize: 13, padding: '8px 14px', borderRadius: 8, textAlign: 'center',
+            marginBottom: 12,
           }}>
             {wsStatus === 'disconnected' ? 'Backend offline — reconectando em 5s...' : 'Conectando ao backend...'}
           </div>
@@ -244,14 +219,14 @@ export function TerminalPanel({
         {selectedChatAgentId === null ? (
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            flex: 1, opacity: 0.35, userSelect: 'none', color: '#fff', fontSize: 14,
+            flex: 1, opacity: 0.35, userSelect: 'none', color: '#fff', fontSize: 15,
           }}>
-            Clique em um agente no mapa para conversar
+            Selecione um agente acima para conversar
           </div>
         ) : (
           <>
             {messages.length === 0 && wsStatus === 'connected' && (
-              <div style={{ color: 'rgba(255,255,255,0.25)', fontSize: 14, textAlign: 'center', marginTop: 20 }}>
+              <div style={{ color: 'rgba(255,255,255,0.25)', fontSize: 15, textAlign: 'center', marginTop: 40 }}>
                 Fale com {activeName}...
               </div>
             )}
@@ -267,14 +242,17 @@ export function TerminalPanel({
         )}
       </div>
 
-      {/* Input */}
+      {/* Input area */}
       <div style={{
         borderTop: '1px solid rgba(255,255,255,0.07)',
-        padding: '10px 16px',
+        padding: '14px 24px',
         display: 'flex',
-        gap: 8,
+        gap: 10,
         alignItems: 'flex-end',
         flexShrink: 0,
+        maxWidth: 800,
+        width: '100%',
+        margin: '0 auto',
       }}>
         <textarea
           ref={inputRef}
@@ -298,16 +276,16 @@ export function TerminalPanel({
             outline: 'none',
             fontSize: CHAT_SIZE,
             fontFamily: CHAT_FONT,
-            padding: '10px 14px',
+            padding: '12px 16px',
             resize: 'none',
-            maxHeight: 100,
+            maxHeight: 120,
             overflowY: 'auto',
             lineHeight: 1.5,
           }}
           onInput={(e) => {
             const el = e.currentTarget;
             el.style.height = 'auto';
-            el.style.height = `${Math.min(el.scrollHeight, 100)}px`;
+            el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
           }}
         />
         <button
@@ -319,7 +297,7 @@ export function TerminalPanel({
             borderRadius: 12,
             color: input.trim() ? '#fff' : 'rgba(255,255,255,0.25)',
             cursor: input.trim() ? 'pointer' : 'default',
-            padding: '10px 20px',
+            padding: '12px 24px',
             fontSize: 15,
             fontFamily: CHAT_FONT,
             fontWeight: 600,
@@ -335,13 +313,14 @@ export function TerminalPanel({
   );
 }
 
-const iconBtn: React.CSSProperties = {
+const iconBtnStyle: React.CSSProperties = {
   background: 'rgba(255,255,255,0.05)',
   border: '1px solid rgba(255,255,255,0.08)',
   borderRadius: 6,
   color: 'rgba(255,255,255,0.4)',
   cursor: 'pointer',
-  fontSize: 13,
+  fontSize: 12,
+  fontFamily: 'system-ui, sans-serif',
   padding: '4px 10px',
 };
 
@@ -351,7 +330,7 @@ function UserBubble({ text }: { text: string }) {
       <div style={{
         background: 'rgba(255,255,255,0.1)',
         color: '#fff',
-        padding: '8px 14px',
+        padding: '10px 16px',
         maxWidth: '70%',
         fontSize: CHAT_SIZE,
         fontFamily: CHAT_FONT,
@@ -383,7 +362,7 @@ function AssistantBubble({
 
   return (
     <div
-      style={{ marginTop: 10, position: 'relative' }}
+      style={{ marginTop: 12, position: 'relative' }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >

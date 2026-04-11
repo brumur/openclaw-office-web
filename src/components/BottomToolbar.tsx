@@ -1,5 +1,7 @@
 import { useState } from 'react';
 
+import type { ActiveView } from '../App.js';
+
 import { SettingsModal } from './SettingsModal.js';
 
 interface BottomToolbarProps {
@@ -12,6 +14,8 @@ interface BottomToolbarProps {
   onOpenChat: () => void;
   onClearHistory: () => void;
   unreadCount?: number;
+  activeView: ActiveView;
+  onSetActiveView: (view: ActiveView) => void;
 }
 
 const panelStyle: React.CSSProperties = {
@@ -55,6 +59,8 @@ export function BottomToolbar({
   onOpenChat,
   onClearHistory,
   unreadCount = 0,
+  activeView,
+  onSetActiveView,
 }: BottomToolbarProps) {
   const [hovered, setHovered] = useState<string | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -108,20 +114,52 @@ export function BottomToolbar({
         )}
       </div>
 
-      {/* Layout editor */}
-      <button
-        onClick={onToggleEditMode}
-        onMouseEnter={() => setHovered('edit')}
-        onMouseLeave={() => setHovered(null)}
-        style={
-          isEditMode
-            ? btnActive
-            : { ...btnBase, background: hovered === 'edit' ? 'var(--pixel-btn-hover-bg)' : btnBase.background }
-        }
-        title="Edit office layout"
-      >
-        Layout
-      </button>
+      {/* View toggle: Office / Dashboard */}
+      <div style={{ display: 'flex', gap: 0 }}>
+        <button
+          onClick={() => onSetActiveView('office')}
+          onMouseEnter={() => setHovered('view-office')}
+          onMouseLeave={() => setHovered(null)}
+          style={
+            activeView === 'office'
+              ? btnActive
+              : { ...btnBase, background: hovered === 'view-office' ? 'var(--pixel-btn-hover-bg)' : btnBase.background }
+          }
+          title="Pixel Office view"
+        >
+          Office
+        </button>
+        <button
+          onClick={() => onSetActiveView('dashboard')}
+          onMouseEnter={() => setHovered('view-dashboard')}
+          onMouseLeave={() => setHovered(null)}
+          style={
+            activeView === 'dashboard'
+              ? btnActive
+              : { ...btnBase, background: hovered === 'view-dashboard' ? 'var(--pixel-btn-hover-bg)' : btnBase.background }
+          }
+          title="Dashboard view"
+        >
+          Dashboard
+        </button>
+      </div>
+
+      {/* Layout editor — only in office view */}
+      {activeView === 'office' && (
+        <button
+          onClick={onToggleEditMode}
+          onMouseEnter={() => setHovered('edit')}
+          onMouseLeave={() => setHovered(null)}
+          style={
+            isEditMode
+              ? btnActive
+              : { ...btnBase, background: hovered === 'edit' ? 'var(--pixel-btn-hover-bg)' : btnBase.background }
+          }
+          title="Edit office layout"
+        >
+          Layout
+        </button>
+      )}
 
       {/* Settings */}
       <div style={{ position: 'relative' }}>
