@@ -13,6 +13,7 @@ const RESIDENT_COLORS: Record<number, string> = {
   8: '#34d399', // service-ops     — emerald
   9: '#fbbf24', // analytics          — amber
   10: '#f87171', // security-watchdog — red
+  11: '#e879f9', // change-manager    — fuchsia
 };
 
 const DYNAMIC_PALETTE = ['#a78bfa', '#38bdf8', '#fbbf24', '#34d399', '#f87171'];
