@@ -3,7 +3,7 @@ import { useState } from 'react';
 import type { ActiveView } from '../../App.js';
 import { SettingsModal } from '../SettingsModal.js';
 
-import { ChatIcon, CollapseIcon, DashboardIcon, ExpandIcon, LayoutIcon, OfficeIcon, SettingsIcon } from './NavIcons.js';
+import { ChatIcon, CollapseIcon, DashboardIcon, ExpandIcon, LayoutIcon, LogoutIcon, OfficeIcon, SettingsIcon } from './NavIcons.js';
 import { NavItem } from './NavItem.js';
 
 interface SidebarProps {
@@ -16,6 +16,7 @@ interface SidebarProps {
   onToggleEditMode: () => void;
   onOpenChat: () => void;
   unreadCount: number;
+  onLogout: () => void;
   // Settings
   isDebugMode: boolean;
   onToggleDebugMode: () => void;
@@ -37,6 +38,7 @@ export function Sidebar({
   onToggleEditMode,
   onOpenChat,
   unreadCount,
+  onLogout,
   isDebugMode,
   onToggleDebugMode,
   alwaysShowOverlay,
@@ -152,13 +154,19 @@ export function Sidebar({
           {/* Spacer */}
           <div style={{ flex: 1 }} />
 
-          {/* Settings — bottom */}
+          {/* Settings + Logout — bottom */}
           <div style={{ borderTop: '1px solid var(--pixel-border)', paddingTop: 8, paddingBottom: 8 }}>
             <NavItem
               icon={<SettingsIcon size={20} />}
               label="Settings"
               collapsed={collapsed}
               onClick={() => setIsSettingsOpen(true)}
+            />
+            <NavItem
+              icon={<LogoutIcon size={20} />}
+              label="Sair"
+              collapsed={collapsed}
+              onClick={onLogout}
             />
           </div>
         </div>
@@ -173,6 +181,7 @@ export function Sidebar({
         onToggleAlwaysShowOverlay={onToggleAlwaysShowOverlay}
         onOpenChat={onOpenChat}
         onClearHistory={onClearHistory}
+        onLogout={onLogout}
       />
     </>
   );

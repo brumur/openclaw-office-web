@@ -10,6 +10,7 @@ interface MobileTabBarProps {
   onSetActiveView: (view: ActiveView) => void;
   onOpenChat: () => void;  // navigates to chat view
   unreadCount: number;
+  onLogout: () => void;
   // Settings
   isDebugMode: boolean;
   onToggleDebugMode: () => void;
@@ -34,6 +35,7 @@ export function MobileTabBar({
   onSetActiveView,
   onOpenChat,
   unreadCount,
+  onLogout,
   isDebugMode,
   onToggleDebugMode,
   alwaysShowOverlay,
@@ -160,6 +162,7 @@ export function MobileTabBar({
         onToggleAlwaysShowOverlay={onToggleAlwaysShowOverlay}
         onOpenChat={onOpenChat}
         onClearHistory={onClearHistory}
+        onLogout={onLogout}
       />
     </>
   );

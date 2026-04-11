@@ -93,11 +93,11 @@ const STATUS_BG: Record<ResolvedStatus, string> = {
 };
 
 const baseCardStyle: React.CSSProperties = {
-  borderRadius: 0,
-  padding: '16px',
+  borderRadius: 8,
+  padding: '14px 16px',
   display: 'flex',
   flexDirection: 'column',
-  gap: 12,
+  gap: 10,
   boxShadow: 'var(--pixel-shadow)',
   minWidth: 0,
   transition: 'border-color 0.3s, background 0.3s',
@@ -111,9 +111,9 @@ const headerStyle: React.CSSProperties = {
 };
 
 const nameStyle: React.CSSProperties = {
-  fontSize: '24px',
+  fontSize: 15,
   color: 'var(--pixel-text)',
-  fontWeight: 'bold',
+  fontWeight: 600,
   overflow: 'hidden',
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
@@ -128,13 +128,15 @@ const statusDotStyle = (color: string): React.CSSProperties => ({
 });
 
 const statusLabelStyle = (color: string): React.CSSProperties => ({
-  fontSize: '18px',
+  fontSize: 12,
   color,
-  fontWeight: 'bold',
+  fontWeight: 600,
+  letterSpacing: '0.04em',
+  textTransform: 'uppercase',
 });
 
 const sectionStyle: React.CSSProperties = {
-  fontSize: '18px',
+  fontSize: 13,
   color: 'var(--pixel-text-dim)',
   lineHeight: 1.4,
 };
@@ -142,7 +144,8 @@ const sectionStyle: React.CSSProperties = {
 const toolPillStyle: React.CSSProperties = {
   display: 'inline-block',
   padding: '2px 8px',
-  fontSize: '16px',
+  fontSize: 12,
+  borderRadius: 4,
   background: 'rgba(90, 140, 255, 0.15)',
   border: '1px solid rgba(90, 140, 255, 0.3)',
   color: 'var(--pixel-accent)',
@@ -153,7 +156,8 @@ const toolPillStyle: React.CSSProperties = {
 const channelBadgeStyle: React.CSSProperties = {
   display: 'inline-block',
   padding: '2px 8px',
-  fontSize: '16px',
+  fontSize: 12,
+  borderRadius: 4,
   background: 'rgba(90, 200, 140, 0.15)',
   border: '1px solid rgba(90, 200, 140, 0.3)',
   color: 'var(--pixel-green, #5ac88c)',
@@ -162,12 +166,13 @@ const channelBadgeStyle: React.CSSProperties = {
 };
 
 const chatBtnStyle: React.CSSProperties = {
-  padding: '6px 16px',
-  fontSize: '20px',
+  padding: '7px 18px',
+  fontSize: 13,
+  fontWeight: 600,
   background: 'var(--pixel-accent)',
   color: '#fff',
-  border: '2px solid var(--pixel-accent)',
-  borderRadius: 0,
+  border: 'none',
+  borderRadius: 8,
   cursor: 'pointer',
   alignSelf: 'flex-end',
 };

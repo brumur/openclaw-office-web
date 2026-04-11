@@ -32,7 +32,6 @@ interface ChatViewProps {
   wsStatus: WsStatus;
   sidebarWidth?: number;
   bottomOffset?: number;
-  onLogout?: () => void;
 }
 
 const STATUS_DOT: Record<WsStatus, { color: string; pulse: boolean }> = {
@@ -50,7 +49,6 @@ export function ChatView({
   wsStatus,
   sidebarWidth = 0,
   bottomOffset = 0,
-  onLogout,
 }: ChatViewProps) {
   const [input, setInput] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -177,11 +175,6 @@ export function ChatView({
             }} />
             {wsStatus === 'connected' ? 'Online' : wsStatus === 'connecting' ? 'Conectando...' : 'Offline'}
           </span>
-          {onLogout && (
-            <button onClick={onLogout} title="Sair" style={iconBtnStyle}>
-              Sair
-            </button>
-          )}
         </div>
       </div>
 
@@ -313,16 +306,6 @@ export function ChatView({
   );
 }
 
-const iconBtnStyle: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.05)',
-  border: '1px solid rgba(255,255,255,0.08)',
-  borderRadius: 6,
-  color: 'rgba(255,255,255,0.4)',
-  cursor: 'pointer',
-  fontSize: 12,
-  fontFamily: 'system-ui, sans-serif',
-  padding: '4px 10px',
-};
 
 function UserBubble({ text }: { text: string }) {
   return (

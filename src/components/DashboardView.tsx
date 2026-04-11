@@ -16,20 +16,20 @@ interface DashboardViewProps {
 }
 
 const headerStyle: React.CSSProperties = {
-  fontSize: '32px',
+  fontSize: 22,
   color: 'var(--pixel-text)',
   marginBottom: 20,
-  fontWeight: 'bold',
+  fontWeight: 700,
 };
 
 const gridStyle: React.CSSProperties = {
   display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-  gap: 16,
+  gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+  gap: 14,
 };
 
 const emptyStyle: React.CSSProperties = {
-  fontSize: '22px',
+  fontSize: 14,
   color: 'var(--pixel-text-dim)',
   textAlign: 'center',
   padding: '60px 20px',

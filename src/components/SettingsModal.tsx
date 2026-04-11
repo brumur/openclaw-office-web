@@ -11,6 +11,7 @@ interface SettingsModalProps {
   onToggleAlwaysShowOverlay: () => void;
   onOpenChat: () => void;
   onClearHistory: () => void;
+  onLogout?: () => void;
 }
 
 const menuItemBase: React.CSSProperties = {
@@ -60,6 +61,7 @@ export function SettingsModal({
   onToggleAlwaysShowOverlay,
   onOpenChat,
   onClearHistory,
+  onLogout,
 }: SettingsModalProps) {
   const [hovered, setHovered] = useState<string | null>(null);
   const [soundLocal, setSoundLocal] = useState(isSoundEnabled);
@@ -190,6 +192,15 @@ export function SettingsModal({
               No
             </button>
           </div>
+        )}
+
+        {onLogout && (
+          <>
+            <div style={{ height: 1, margin: '4px 0', background: 'var(--pixel-border)' }} />
+            <button onClick={() => { onLogout(); onClose(); }} {...item('logout')}>
+              <span style={{ color: 'rgba(255, 120, 120, 0.9)' }}>Sair</span>
+            </button>
+          </>
         )}
       </div>
     </>

@@ -14,6 +14,7 @@ interface AppShellProps {
   onToggleEditMode: () => void;
   onOpenChat: () => void;
   unreadCount: number;
+  onLogout: () => void;
   // Settings
   isDebugMode: boolean;
   onToggleDebugMode: () => void;
@@ -28,14 +29,17 @@ export function useNavLayout(isMobile: boolean, sidebarCollapsed: boolean, activ
     return {
       sidebarWidth: 0,
       bottomOffset: TAB_BAR_HEIGHT,
+      physicalSidebarWidth: 0,
     };
   }
+  const physicalSidebarWidth = sidebarCollapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH;
   const sidebarWidth = activeView === 'office'
     ? 0 // Office view: sidebar overlays, content uses full width
-    : (sidebarCollapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH);
+    : physicalSidebarWidth;
   return {
     sidebarWidth,
     bottomOffset: 0,
+    physicalSidebarWidth,
   };
 }
 
@@ -48,6 +52,7 @@ export function AppShell({
   onToggleEditMode,
   onOpenChat,
   unreadCount,
+  onLogout,
   isDebugMode,
   onToggleDebugMode,
   alwaysShowOverlay,
@@ -64,6 +69,7 @@ export function AppShell({
           onSetActiveView={onSetActiveView}
           onOpenChat={onOpenChat}
           unreadCount={unreadCount}
+          onLogout={onLogout}
           isDebugMode={isDebugMode}
           onToggleDebugMode={onToggleDebugMode}
           alwaysShowOverlay={alwaysShowOverlay}
@@ -113,6 +119,7 @@ export function AppShell({
       onToggleEditMode={onToggleEditMode}
       onOpenChat={onOpenChat}
       unreadCount={unreadCount}
+      onLogout={onLogout}
       isDebugMode={isDebugMode}
       onToggleDebugMode={onToggleDebugMode}
       alwaysShowOverlay={alwaysShowOverlay}

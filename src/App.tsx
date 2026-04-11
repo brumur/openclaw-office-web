@@ -36,97 +36,6 @@ function getOfficeState(): OfficeState {
   return officeStateRef.current;
 }
 
-const actionBarBtnStyle: React.CSSProperties = {
-  padding: '4px 10px',
-  fontSize: '22px',
-  background: 'var(--pixel-btn-bg)',
-  color: 'var(--pixel-text-dim)',
-  border: '2px solid transparent',
-  borderRadius: 0,
-  cursor: 'pointer',
-};
-
-const actionBarBtnDisabled: React.CSSProperties = {
-  ...actionBarBtnStyle,
-  opacity: 'var(--pixel-btn-disabled-opacity)',
-  cursor: 'default',
-};
-
-function EditActionBar({
-  editor,
-  editorState: es,
-}: {
-  editor: ReturnType<typeof useEditorActions>;
-  editorState: EditorState;
-}) {
-  const [showResetConfirm, setShowResetConfirm] = useState(false);
-
-  const undoDisabled = es.undoStack.length === 0;
-  const redoDisabled = es.redoStack.length === 0;
-
-  return (
-    <div
-      style={{
-        position: 'absolute',
-        top: 8,
-        left: '50%',
-        transform: 'translateX(-50%)',
-        zIndex: 'var(--pixel-controls-z)',
-        display: 'flex',
-        gap: 4,
-        alignItems: 'center',
-        background: 'var(--pixel-bg)',
-        border: '2px solid var(--pixel-border)',
-        borderRadius: 0,
-        padding: '4px 8px',
-        boxShadow: 'var(--pixel-shadow)',
-      }}
-    >
-      <button
-        style={undoDisabled ? actionBarBtnDisabled : actionBarBtnStyle}
-        onClick={undoDisabled ? undefined : editor.handleUndo}
-        title="Undo (Ctrl+Z)"
-      >
-        Undo
-      </button>
-      <button
-        style={redoDisabled ? actionBarBtnDisabled : actionBarBtnStyle}
-        onClick={redoDisabled ? undefined : editor.handleRedo}
-        title="Redo (Ctrl+Y)"
-      >
-        Redo
-      </button>
-      <button style={actionBarBtnStyle} onClick={editor.handleSave} title="Save layout">
-        Save
-      </button>
-      {!showResetConfirm ? (
-        <button
-          style={actionBarBtnStyle}
-          onClick={() => setShowResetConfirm(true)}
-          title="Reset to last saved layout"
-        >
-          Reset
-        </button>
-      ) : (
-        <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-          <span style={{ fontSize: '22px', color: 'var(--pixel-reset-text)' }}>Reset?</span>
-          <button
-            style={{ ...actionBarBtnStyle, background: 'var(--pixel-danger-bg)', color: '#fff' }}
-            onClick={() => {
-              setShowResetConfirm(false);
-              editor.handleReset();
-            }}
-          >
-            Yes
-          </button>
-          <button style={actionBarBtnStyle} onClick={() => setShowResetConfirm(false)}>
-            No
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
 
 export type ChatMessage = { role: 'user' | 'assistant'; text: string; streaming?: boolean };
 export type WsStatus = 'connecting' | 'connected' | 'disconnected';
@@ -169,15 +78,13 @@ function App() {
   const [messagesByAgent, setMessagesByAgent] = useState<Record<number, ChatMessage[]>>(loadStoredMessages);
   const [selectedChatAgentId, setSelectedChatAgentId] = useState<number | null>(null);
   const [unreadByAgent, setUnreadByAgent] = useState<Record<number, number>>({});
-  const [isTerminalOpen, setIsTerminalOpen] = useState(false);
-  const [chatHeight, setChatHeight] = useState(320);
   const [wsStatus, setWsStatus] = useState<WsStatus>('connecting');
   const [activeView, setActiveView] = useState<ActiveView>('office');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     try { return localStorage.getItem('pixel-sidebar-collapsed') === 'true'; } catch { return false; }
   });
   const isMobile = useIsMobile();
-  const { sidebarWidth, bottomOffset } = useNavLayout(isMobile, sidebarCollapsed, activeView);
+  const { sidebarWidth, bottomOffset, physicalSidebarWidth } = useNavLayout(isMobile, sidebarCollapsed, activeView);
 
   const handleToggleSidebar = useCallback(() => {
     setSidebarCollapsed((prev) => {
@@ -403,8 +310,6 @@ function App() {
     );
   }
 
-  const chatOpen = isTerminalOpen && agents.length > 0 && !isDebugMode;
-
   // Build agent tab descriptors for the chat tab bar
   const agentTabs = agents.map((id) => {
     const ch = officeState.characters.get(id);
@@ -481,63 +386,66 @@ function App() {
           }}
         />
 
-        {/* BottomToolbar moved outside container div for cross-view visibility */}
-
-        {editor.isEditMode && editor.isDirty && (
-          <EditActionBar editor={editor} editorState={editorState} />
+        {/* Edit Layout FAB — only when NOT in edit mode, office view */}
+        {!editor.isEditMode && !isDebugMode && (
+          <button
+            onClick={editor.handleToggleEditMode}
+            style={{
+              position: 'absolute',
+              top: 12,
+              right: 12,
+              zIndex: 51,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '6px 14px',
+              background: 'rgba(15,15,25,0.85)',
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              borderRadius: 8,
+              color: 'rgba(255,255,255,0.7)',
+              cursor: 'pointer',
+              fontSize: 12,
+              fontFamily: 'system-ui, sans-serif',
+              fontWeight: 500,
+              whiteSpace: 'nowrap',
+            }}
+            title="Editar layout do escritório"
+          >
+            <svg width={13} height={13} viewBox="0 0 20 20" fill="none">
+              <path d="M14 2.5l3.5 3.5-9 9H5v-3.5z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+              <line x1="11.5" y1="5" x2="15" y2="8.5" stroke="currentColor" strokeWidth="1.3" />
+            </svg>
+            Edit Layout
+          </button>
         )}
 
         {showRotateHint && (
           <div
             style={{
               position: 'absolute',
-              top: editor.isDirty ? 52 : 8,
+              top: 8,
               left: '50%',
               transform: 'translateX(-50%)',
               zIndex: 49,
               background: 'var(--pixel-hint-bg)',
               color: '#fff',
-              fontSize: '20px',
-              padding: '3px 8px',
-              borderRadius: 0,
-              border: '2px solid var(--pixel-accent)',
+              fontSize: '13px',
+              fontFamily: 'system-ui, sans-serif',
+              padding: '4px 12px',
+              borderRadius: 6,
+              border: '1px solid var(--pixel-accent)',
               boxShadow: 'var(--pixel-shadow)',
               pointerEvents: 'none',
               whiteSpace: 'nowrap',
             }}
           >
-            Rotate (R)
+            Press R to rotate
           </div>
         )}
 
-        {editor.isEditMode &&
-          (() => {
-            const selUid = editorState.selectedFurnitureUid;
-            const selColor = selUid
-              ? (officeState.getLayout().furniture.find((f) => f.uid === selUid)?.color ?? null)
-              : null;
-            return (
-              <EditorToolbar
-                activeTool={editorState.activeTool}
-                selectedTileType={editorState.selectedTileType}
-                selectedFurnitureType={editorState.selectedFurnitureType}
-                selectedFurnitureUid={selUid}
-                selectedFurnitureColor={selColor}
-                floorColor={editorState.floorColor}
-                wallColor={editorState.wallColor}
-                selectedWallSet={editorState.selectedWallSet}
-                onToolChange={editor.handleToolChange}
-                onTileTypeChange={editor.handleTileTypeChange}
-                onFloorColorChange={editor.handleFloorColorChange}
-                onWallColorChange={editor.handleWallColorChange}
-                onWallSetChange={editor.handleWallSetChange}
-                onSelectedFurnitureColorChange={editor.handleSelectedFurnitureColorChange}
-                onFurnitureTypeChange={editor.handleFurnitureTypeChange}
-                loadedAssets={loadedAssets}
-              />
-            );
-          })()}
-
+        {/* EditorToolbar is rendered at root level below — not here */}
         <CameraIndicator status={wsStatus} />
 
         {!isDebugMode && (
@@ -579,6 +487,44 @@ function App() {
         )}
       </div>
 
+      {/* Editor panel — outside canvas container so canvas stays fully interactive */}
+      {activeView === 'office' && editor.isEditMode &&
+        (() => {
+          const selUid = editorState.selectedFurnitureUid;
+          const selColor = selUid
+            ? (officeState.getLayout().furniture.find((f) => f.uid === selUid)?.color ?? null)
+            : null;
+          return (
+            <EditorToolbar
+              activeTool={editorState.activeTool}
+              selectedTileType={editorState.selectedTileType}
+              selectedFurnitureType={editorState.selectedFurnitureType}
+              selectedFurnitureUid={selUid}
+              selectedFurnitureColor={selColor}
+              floorColor={editorState.floorColor}
+              wallColor={editorState.wallColor}
+              selectedWallSet={editorState.selectedWallSet}
+              onToolChange={editor.handleToolChange}
+              onTileTypeChange={editor.handleTileTypeChange}
+              onFloorColorChange={editor.handleFloorColorChange}
+              onWallColorChange={editor.handleWallColorChange}
+              onWallSetChange={editor.handleWallSetChange}
+              onSelectedFurnitureColorChange={editor.handleSelectedFurnitureColorChange}
+              onFurnitureTypeChange={editor.handleFurnitureTypeChange}
+              loadedAssets={loadedAssets}
+              sidebarWidth={physicalSidebarWidth}
+              isDirty={editor.isDirty}
+              canUndo={editorState.undoStack.length > 0}
+              canRedo={editorState.redoStack.length > 0}
+              onUndo={editor.handleUndo}
+              onRedo={editor.handleRedo}
+              onSave={editor.handleSave}
+              onReset={editor.handleReset}
+              onClose={editor.handleToggleEditMode}
+            />
+          );
+        })()}
+
       {/* Navigation — sidebar (desktop) or tab bar (mobile) */}
       <AppShell
         activeView={activeView}
@@ -589,6 +535,10 @@ function App() {
         onToggleEditMode={editor.handleToggleEditMode}
         onOpenChat={() => setActiveView('chat')}
         unreadCount={activeView === 'chat' ? 0 : Object.values(unreadByAgent).reduce((a, b) => a + b, 0)}
+        onLogout={async () => {
+          await fetch('/api/logout', { method: 'POST', credentials: 'include' });
+          setIsAuthenticated(false);
+        }}
         isDebugMode={isDebugMode}
         onToggleDebugMode={handleToggleDebugMode}
         alwaysShowOverlay={alwaysShowOverlay}
@@ -607,10 +557,6 @@ function App() {
           wsStatus={wsStatus}
           sidebarWidth={sidebarWidth}
           bottomOffset={bottomOffset}
-          onLogout={async () => {
-            await fetch('/api/logout', { method: 'POST', credentials: 'include' });
-            setIsAuthenticated(false);
-          }}
         />
       )}
 

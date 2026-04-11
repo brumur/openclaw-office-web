@@ -13,39 +13,8 @@ import type { FloorColor, TileType as TileTypeVal } from '../types.js';
 import { EditTool } from '../types.js';
 import { getWallSetCount, getWallSetPreviewSprite } from '../wallTiles.js';
 
-const btnStyle: React.CSSProperties = {
-  padding: '3px 8px',
-  fontSize: '22px',
-  background: 'rgba(255, 255, 255, 0.08)',
-  color: 'rgba(255, 255, 255, 0.7)',
-  border: '2px solid transparent',
-  borderRadius: 0,
-  cursor: 'pointer',
-};
-
-const activeBtnStyle: React.CSSProperties = {
-  ...btnStyle,
-  background: 'rgba(90, 140, 255, 0.25)',
-  color: 'rgba(255, 255, 255, 0.9)',
-  border: '2px solid #5a8cff',
-};
-
-const tabStyle: React.CSSProperties = {
-  padding: '2px 6px',
-  fontSize: '20px',
-  background: 'transparent',
-  color: 'rgba(255, 255, 255, 0.5)',
-  border: '2px solid transparent',
-  borderRadius: 0,
-  cursor: 'pointer',
-};
-
-const activeTabStyle: React.CSSProperties = {
-  ...tabStyle,
-  background: 'rgba(255, 255, 255, 0.08)',
-  color: 'rgba(255, 255, 255, 0.8)',
-  border: '2px solid #5a8cff',
-};
+const PANEL_WIDTH = 220;
+const FONT = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
 
 interface EditorToolbarProps {
   activeTool: EditTool;
@@ -64,43 +33,37 @@ interface EditorToolbarProps {
   onSelectedFurnitureColorChange: (color: FloorColor | null) => void;
   onFurnitureTypeChange: (type: string) => void;
   loadedAssets?: LoadedAssetData;
+  // Action bar (folded in from EditActionBar)
+  sidebarWidth?: number;
+  isDirty?: boolean;
+  canUndo?: boolean;
+  canRedo?: boolean;
+  onUndo?: () => void;
+  onRedo?: () => void;
+  onSave?: () => void;
+  onReset?: () => void;
+  onClose?: () => void;
 }
 
-/** Render a floor pattern preview at 2x (32x32 canvas showing the 16x16 tile) */
+/** Render a floor pattern preview */
 function FloorPatternPreview({
-  patternIndex,
-  color,
-  selected,
-  onClick,
+  patternIndex, color, selected, onClick,
 }: {
-  patternIndex: number;
-  color: FloorColor;
-  selected: boolean;
-  onClick: () => void;
+  patternIndex: number; color: FloorColor; selected: boolean; onClick: () => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const displaySize = 32;
-  const tileZoom = 2;
+  const size = 32;
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-
-    canvas.width = displaySize;
-    canvas.height = displaySize;
+    canvas.width = size; canvas.height = size;
     ctx.imageSmoothingEnabled = false;
-
-    if (!hasFloorSprites()) {
-      ctx.fillStyle = '#444';
-      ctx.fillRect(0, 0, displaySize, displaySize);
-      return;
-    }
-
+    if (!hasFloorSprites()) { ctx.fillStyle = '#444'; ctx.fillRect(0, 0, size, size); return; }
     const sprite = getColorizedFloorSprite(patternIndex, color);
-    const cached = getCachedSprite(sprite, tileZoom);
-    ctx.drawImage(cached, 0, 0);
+    ctx.drawImage(getCachedSprite(sprite, 2), 0, 0);
   }, [patternIndex, color]);
 
   return (
@@ -108,64 +71,37 @@ function FloorPatternPreview({
       onClick={onClick}
       title={`Floor ${patternIndex}`}
       style={{
-        width: displaySize,
-        height: displaySize,
-        padding: 0,
-        border: selected ? '2px solid #5a8cff' : '2px solid #4a4a6a',
-        borderRadius: 0,
-        cursor: 'pointer',
-        overflow: 'hidden',
-        flexShrink: 0,
-        background: '#2A2A3A',
+        width: size, height: size, padding: 0, flexShrink: 0, cursor: 'pointer',
+        border: selected ? '2px solid #5a8cff' : '2px solid rgba(255,255,255,0.1)',
+        borderRadius: 4, overflow: 'hidden', background: '#1e1e2e',
       }}
     >
-      <canvas
-        ref={canvasRef}
-        style={{ width: displaySize, height: displaySize, display: 'block' }}
-      />
+      <canvas ref={canvasRef} style={{ width: size, height: size, display: 'block' }} />
     </button>
   );
 }
 
-/** Render a wall set preview showing the first piece (bitmask 0, 16×32) at 1x scale */
+/** Render a wall set preview */
 function WallSetPreview({
-  setIndex,
-  color,
-  selected,
-  onClick,
+  setIndex, color, selected, onClick,
 }: {
-  setIndex: number;
-  color: FloorColor;
-  selected: boolean;
-  onClick: () => void;
+  setIndex: number; color: FloorColor; selected: boolean; onClick: () => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const displayW = 32;
-  const displayH = 64;
-  const previewZoom = 2;
+  const w = 32; const h = 64;
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-
-    canvas.width = displayW;
-    canvas.height = displayH;
+    canvas.width = w; canvas.height = h;
     ctx.imageSmoothingEnabled = false;
-
     const sprite = getWallSetPreviewSprite(setIndex);
-    if (!sprite) {
-      ctx.fillStyle = '#444';
-      ctx.fillRect(0, 0, displayW, displayH);
-      return;
-    }
-
-    // Colorize the preview sprite using the same colorize path as rendering
+    if (!sprite) { ctx.fillStyle = '#444'; ctx.fillRect(0, 0, w, h); return; }
     const cacheKey = `wall-preview-${setIndex}-${color.h}-${color.s}-${color.b}-${color.c}`;
     const colorized = getColorizedSprite(cacheKey, sprite, { ...color, colorize: true });
-    const cached = getCachedSprite(colorized, previewZoom);
-    ctx.drawImage(cached, 0, 0);
+    ctx.drawImage(getCachedSprite(colorized, 2), 0, 0);
   }, [setIndex, color]);
 
   return (
@@ -173,61 +109,41 @@ function WallSetPreview({
       onClick={onClick}
       title={`Wall ${setIndex + 1}`}
       style={{
-        width: displayW,
-        height: displayH,
-        padding: 0,
-        border: selected ? '2px solid #5a8cff' : '2px solid #4a4a6a',
-        borderRadius: 0,
-        cursor: 'pointer',
-        overflow: 'hidden',
-        flexShrink: 0,
-        background: '#2A2A3A',
+        width: w, height: h, padding: 0, flexShrink: 0, cursor: 'pointer',
+        border: selected ? '2px solid #5a8cff' : '2px solid rgba(255,255,255,0.1)',
+        borderRadius: 4, overflow: 'hidden', background: '#1e1e2e',
       }}
     >
-      <canvas ref={canvasRef} style={{ width: displayW, height: displayH, display: 'block' }} />
+      <canvas ref={canvasRef} style={{ width: w, height: h, display: 'block' }} />
     </button>
   );
 }
 
-/** Slider control for a single color parameter */
-function ColorSlider({
-  label,
-  value,
-  min,
-  max,
-  onChange,
-}: {
-  label: string;
-  value: number;
-  min: number;
-  max: number;
-  onChange: (v: number) => void;
+/** Compact horizontal slider */
+function ColorSlider({ label, value, min, max, onChange }: {
+  label: string; value: number; min: number; max: number; onChange: (v: number) => void;
 }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-      <span
-        style={{ fontSize: '20px', color: '#999', width: 28, textAlign: 'right', flexShrink: 0 }}
-      >
-        {label}
-      </span>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', width: 14, fontFamily: FONT, flexShrink: 0 }}>{label}</span>
       <input
-        type="range"
-        min={min}
-        max={max}
-        value={value}
+        type="range" min={min} max={max} value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        style={{ flex: 1, height: 12, accentColor: 'rgba(90, 140, 255, 0.8)' }}
+        style={{ flex: 1, height: 3, accentColor: '#5a8cff' }}
       />
-      <span
-        style={{ fontSize: '20px', color: '#999', width: 48, textAlign: 'right', flexShrink: 0 }}
-      >
-        {value}
-      </span>
+      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', width: 32, textAlign: 'right', fontFamily: FONT, flexShrink: 0 }}>{value}</span>
     </div>
   );
 }
 
 const DEFAULT_FURNITURE_COLOR: FloorColor = { h: 0, s: 0, b: 0, c: 0 };
+
+const toolItems = [
+  { tool: EditTool.TILE_PAINT,      label: 'Floor',     desc: 'Pintar piso' },
+  { tool: EditTool.WALL_PAINT,      label: 'Wall',      desc: 'Pintar paredes' },
+  { tool: EditTool.ERASE,           label: 'Erase',     desc: 'Apagar tiles' },
+  { tool: EditTool.FURNITURE_PLACE, label: 'Furniture', desc: 'Adicionar móveis' },
+];
 
 export function EditorToolbar({
   activeTool,
@@ -246,492 +162,337 @@ export function EditorToolbar({
   onSelectedFurnitureColorChange,
   onFurnitureTypeChange,
   loadedAssets,
+  sidebarWidth = 0,
+  isDirty = false,
+  canUndo = false,
+  canRedo = false,
+  onUndo,
+  onRedo,
+  onSave,
+  onReset,
+  onClose,
 }: EditorToolbarProps) {
   const [activeCategory, setActiveCategory] = useState<FurnitureCategory>('desks');
   const [showColor, setShowColor] = useState(false);
   const [showWallColor, setShowWallColor] = useState(false);
   const [showFurnitureColor, setShowFurnitureColor] = useState(false);
+  const [confirmReset, setConfirmReset] = useState(false);
 
-  // Build dynamic catalog from loaded assets
   useEffect(() => {
     if (loadedAssets) {
       try {
-        console.log(
-          `[EditorToolbar] Building dynamic catalog with ${loadedAssets.catalog.length} assets...`,
-        );
-        const success = buildDynamicCatalog(loadedAssets);
-        console.log(`[EditorToolbar] Catalog build result: ${success}`);
-
-        // Reset to first available category if current doesn't exist
-        const activeCategories = getActiveCategories();
-        if (activeCategories.length > 0) {
-          const firstCat = activeCategories[0]?.id;
-          if (firstCat) {
-            console.log(`[EditorToolbar] Setting active category to: ${firstCat}`);
-            setActiveCategory(firstCat);
-          }
-        }
-      } catch (err) {
-        console.error(`[EditorToolbar] Error building dynamic catalog:`, err);
-      }
+        buildDynamicCatalog(loadedAssets);
+        const cats = getActiveCategories();
+        if (cats.length > 0 && cats[0]) setActiveCategory(cats[0].id);
+      } catch { /* ignore */ }
     }
   }, [loadedAssets]);
 
   const handleColorChange = useCallback(
-    (key: keyof FloorColor, value: number) => {
-      onFloorColorChange({ ...floorColor, [key]: value });
-    },
+    (key: keyof FloorColor, value: number) => onFloorColorChange({ ...floorColor, [key]: value }),
     [floorColor, onFloorColorChange],
   );
-
   const handleWallColorChange = useCallback(
-    (key: keyof FloorColor, value: number) => {
-      onWallColorChange({ ...wallColor, [key]: value });
-    },
+    (key: keyof FloorColor, value: number) => onWallColorChange({ ...wallColor, [key]: value }),
     [wallColor, onWallColorChange],
   );
-
-  // For selected furniture: use existing color or default
   const effectiveColor = selectedFurnitureColor ?? DEFAULT_FURNITURE_COLOR;
   const handleSelFurnColorChange = useCallback(
-    (key: keyof FloorColor, value: number) => {
-      onSelectedFurnitureColorChange({ ...effectiveColor, [key]: value });
-    },
+    (key: keyof FloorColor, value: number) => onSelectedFurnitureColorChange({ ...effectiveColor, [key]: value }),
     [effectiveColor, onSelectedFurnitureColorChange],
   );
-
-  const categoryItems = getCatalogByCategory(activeCategory);
-
-  const patternCount = getFloorPatternCount();
-  // Wall is TileType 0, floor patterns are 1..patternCount
-  const floorPatterns = Array.from({ length: patternCount }, (_, i) => i + 1);
-
-  const thumbSize = 36; // 2x for items
 
   const isFloorActive = activeTool === EditTool.TILE_PAINT || activeTool === EditTool.EYEDROPPER;
   const isWallActive = activeTool === EditTool.WALL_PAINT;
   const isEraseActive = activeTool === EditTool.ERASE;
-  const isFurnitureActive =
-    activeTool === EditTool.FURNITURE_PLACE || activeTool === EditTool.FURNITURE_PICK;
+  const isFurnitureActive = activeTool === EditTool.FURNITURE_PLACE || activeTool === EditTool.FURNITURE_PICK;
+
+  const categoryItems = getCatalogByCategory(activeCategory);
+  const floorPatterns = Array.from({ length: getFloorPatternCount() }, (_, i) => i + 1);
+  const thumbSize = 36;
 
   return (
-    <div
-      style={{
-        position: 'absolute',
-        bottom: 68,
-        left: 10,
-        zIndex: 50,
-        background: '#1e1e2e',
-        border: '2px solid #4a4a6a',
-        borderRadius: 0,
-        padding: '6px 8px',
-        display: 'flex',
-        flexDirection: 'column-reverse',
-        gap: 6,
-        boxShadow: '2px 2px 0px #0a0a14',
-        maxWidth: 'calc(100vw - 20px)',
-      }}
-    >
-      {/* Tool row — at the bottom */}
-      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-        <button
-          style={isFloorActive ? activeBtnStyle : btnStyle}
-          onClick={() => onToolChange(EditTool.TILE_PAINT)}
-          title="Paint floor tiles"
-        >
-          Floor
-        </button>
-        <button
-          style={isWallActive ? activeBtnStyle : btnStyle}
-          onClick={() => onToolChange(EditTool.WALL_PAINT)}
-          title="Paint walls (click to toggle)"
-        >
-          Wall
-        </button>
-        <button
-          style={isEraseActive ? activeBtnStyle : btnStyle}
-          onClick={() => onToolChange(EditTool.ERASE)}
-          title="Erase tiles to void"
-        >
-          Erase
-        </button>
-        <button
-          style={isFurnitureActive ? activeBtnStyle : btnStyle}
-          onClick={() => onToolChange(EditTool.FURNITURE_PLACE)}
-          title="Place furniture"
-        >
-          Furniture
-        </button>
+    <div style={{
+      position: 'absolute',
+      top: 0,
+      left: sidebarWidth,
+      bottom: 0,
+      width: PANEL_WIDTH,
+      zIndex: 52,
+      display: 'flex',
+      flexDirection: 'column',
+      background: 'rgba(15, 15, 25, 0.96)',
+      backdropFilter: 'blur(12px)',
+      WebkitBackdropFilter: 'blur(12px)',
+      borderRight: '1px solid rgba(255,255,255,0.08)',
+      fontFamily: FONT,
+      overflow: 'hidden',
+    }}>
+      {/* Header */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '14px 16px 12px',
+        borderBottom: '1px solid rgba(255,255,255,0.07)',
+        flexShrink: 0,
+      }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.9)', letterSpacing: '0.02em' }}>
+          Layout Editor
+        </span>
+        {onClose && (
+          <button onClick={onClose} style={{
+            background: 'none', border: 'none', color: 'rgba(255,255,255,0.35)',
+            cursor: 'pointer', fontSize: 16, padding: '0 2px', lineHeight: 1,
+          }} title="Fechar editor">✕</button>
+        )}
       </div>
 
-      {/* Sub-panel: Floor tiles — stacked bottom-to-top via column-reverse */}
-      {isFloorActive && (
-        <div style={{ display: 'flex', flexDirection: 'column-reverse', gap: 6 }}>
-          {/* Color toggle + Pick — just above tool row */}
-          <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-            <button
-              style={showColor ? activeBtnStyle : btnStyle}
-              onClick={() => setShowColor((v) => !v)}
-              title="Adjust floor color"
-            >
-              Color
-            </button>
-            <button
-              style={activeTool === EditTool.EYEDROPPER ? activeBtnStyle : btnStyle}
-              onClick={() => onToolChange(EditTool.EYEDROPPER)}
-              title="Pick floor pattern + color from existing tile"
-            >
-              Pick
-            </button>
+      {/* Action row: Undo / Redo / Save / Reset */}
+      <div style={{
+        display: 'flex', gap: 6, padding: '10px 16px',
+        borderBottom: '1px solid rgba(255,255,255,0.07)',
+        flexShrink: 0,
+      }}>
+        {[
+          { label: 'Undo', disabled: !canUndo, action: onUndo },
+          { label: 'Redo', disabled: !canRedo, action: onRedo },
+          { label: 'Save', disabled: !isDirty, action: onSave, accent: true },
+        ].map(({ label, disabled, action, accent }) => (
+          <button key={label} onClick={disabled ? undefined : action} style={{
+            flex: 1, padding: '5px 0', fontSize: 12, fontFamily: FONT, fontWeight: 500,
+            background: accent && !disabled ? 'rgba(90,140,255,0.2)' : 'rgba(255,255,255,0.05)',
+            border: `1px solid ${accent && !disabled ? 'rgba(90,140,255,0.4)' : 'rgba(255,255,255,0.1)'}`,
+            borderRadius: 6, cursor: disabled ? 'default' : 'pointer',
+            color: disabled ? 'rgba(255,255,255,0.2)' : accent ? '#7aa3ff' : 'rgba(255,255,255,0.6)',
+            transition: 'background 0.15s',
+          }}>{label}</button>
+        ))}
+        {!confirmReset ? (
+          <button onClick={isDirty ? () => setConfirmReset(true) : undefined} style={{
+            flex: 1, padding: '5px 0', fontSize: 12, fontFamily: FONT, fontWeight: 500,
+            background: 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: 6, cursor: isDirty ? 'pointer' : 'default',
+            color: isDirty ? 'rgba(248,113,113,0.8)' : 'rgba(255,255,255,0.2)',
+          }}>Reset</button>
+        ) : (
+          <div style={{ flex: 1, display: 'flex', gap: 4 }}>
+            <button onClick={() => { setConfirmReset(false); onReset?.(); }} style={{
+              flex: 1, padding: '5px 0', fontSize: 11, fontFamily: FONT,
+              background: 'rgba(220,50,50,0.3)', border: '1px solid rgba(220,50,50,0.5)',
+              borderRadius: 6, cursor: 'pointer', color: '#f87171',
+            }}>OK</button>
+            <button onClick={() => setConfirmReset(false)} style={{
+              flex: 1, padding: '5px 0', fontSize: 11, fontFamily: FONT,
+              background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: 6, cursor: 'pointer', color: 'rgba(255,255,255,0.5)',
+            }}>✕</button>
           </div>
+        )}
+      </div>
 
-          {/* Color controls (collapsible) — above Wall/Color/Pick */}
-          {showColor && (
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 3,
-                padding: '4px 6px',
-                background: '#181828',
-                border: '2px solid #4a4a6a',
-                borderRadius: 0,
-              }}
-            >
-              <ColorSlider
-                label="H"
-                value={floorColor.h}
-                min={0}
-                max={360}
-                onChange={(v) => handleColorChange('h', v)}
-              />
-              <ColorSlider
-                label="S"
-                value={floorColor.s}
-                min={0}
-                max={100}
-                onChange={(v) => handleColorChange('s', v)}
-              />
-              <ColorSlider
-                label="B"
-                value={floorColor.b}
-                min={-100}
-                max={100}
-                onChange={(v) => handleColorChange('b', v)}
-              />
-              <ColorSlider
-                label="C"
-                value={floorColor.c}
-                min={-100}
-                max={100}
-                onChange={(v) => handleColorChange('c', v)}
-              />
+      {/* Tool nav items */}
+      <div style={{ flexShrink: 0, paddingTop: 4, paddingBottom: 4, borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+        {toolItems.map(({ tool, label, desc }) => {
+          const isActive = tool === EditTool.TILE_PAINT
+            ? isFloorActive
+            : tool === EditTool.WALL_PAINT
+            ? isWallActive
+            : tool === EditTool.ERASE
+            ? isEraseActive
+            : isFurnitureActive;
+          return (
+            <button key={tool} onClick={() => onToolChange(tool)} title={desc} style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              width: '100%', padding: '8px 16px', background: 'none', border: 'none',
+              borderLeft: `3px solid ${isActive ? '#5a8cff' : 'transparent'}`,
+              cursor: 'pointer', fontFamily: FONT,
+              color: isActive ? '#fff' : 'rgba(255,255,255,0.45)',
+              fontSize: 13, fontWeight: isActive ? 600 : 400,
+              textAlign: 'left',
+            }}>
+              <span style={{
+                width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
+                background: isActive ? '#5a8cff' : 'rgba(255,255,255,0.2)',
+              }} />
+              {label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Sub-panel — scrollable */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+
+        {/* Floor sub-panel */}
+        {isFloorActive && (
+          <>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button onClick={() => setShowColor(v => !v)} style={{
+                flex: 1, padding: '5px 0', fontSize: 12, fontFamily: FONT,
+                background: showColor ? 'rgba(90,140,255,0.15)' : 'rgba(255,255,255,0.05)',
+                border: `1px solid ${showColor ? 'rgba(90,140,255,0.4)' : 'rgba(255,255,255,0.1)'}`,
+                borderRadius: 6, cursor: 'pointer', color: showColor ? '#7aa3ff' : 'rgba(255,255,255,0.5)',
+              }}>Color</button>
+              <button onClick={() => onToolChange(EditTool.EYEDROPPER)} style={{
+                flex: 1, padding: '5px 0', fontSize: 12, fontFamily: FONT,
+                background: activeTool === EditTool.EYEDROPPER ? 'rgba(90,140,255,0.15)' : 'rgba(255,255,255,0.05)',
+                border: `1px solid ${activeTool === EditTool.EYEDROPPER ? 'rgba(90,140,255,0.4)' : 'rgba(255,255,255,0.1)'}`,
+                borderRadius: 6, cursor: 'pointer',
+                color: activeTool === EditTool.EYEDROPPER ? '#7aa3ff' : 'rgba(255,255,255,0.5)',
+              }}>Pick</button>
             </div>
-          )}
-
-          {/* Floor pattern horizontal carousel — at the top */}
-          <div
-            style={{
-              display: 'flex',
-              gap: 4,
-              overflowX: 'auto',
-              flexWrap: 'nowrap',
-              paddingBottom: 2,
-            }}
-          >
-            {floorPatterns.map((patIdx) => (
-              <FloorPatternPreview
-                key={patIdx}
-                patternIndex={patIdx}
-                color={floorColor}
-                selected={selectedTileType === patIdx}
-                onClick={() => onTileTypeChange(patIdx as TileTypeVal)}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Sub-panel: Wall — stacked bottom-to-top via column-reverse */}
-      {isWallActive && (
-        <div style={{ display: 'flex', flexDirection: 'column-reverse', gap: 6 }}>
-          {/* Color toggle — just above tool row */}
-          <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-            <button
-              style={showWallColor ? activeBtnStyle : btnStyle}
-              onClick={() => setShowWallColor((v) => !v)}
-              title="Adjust wall color"
-            >
-              Color
-            </button>
-          </div>
-
-          {/* Color controls (collapsible) */}
-          {showWallColor && (
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 3,
-                padding: '4px 6px',
-                background: '#181828',
-                border: '2px solid #4a4a6a',
-                borderRadius: 0,
-              }}
-            >
-              <ColorSlider
-                label="H"
-                value={wallColor.h}
-                min={0}
-                max={360}
-                onChange={(v) => handleWallColorChange('h', v)}
-              />
-              <ColorSlider
-                label="S"
-                value={wallColor.s}
-                min={0}
-                max={100}
-                onChange={(v) => handleWallColorChange('s', v)}
-              />
-              <ColorSlider
-                label="B"
-                value={wallColor.b}
-                min={-100}
-                max={100}
-                onChange={(v) => handleWallColorChange('b', v)}
-              />
-              <ColorSlider
-                label="C"
-                value={wallColor.c}
-                min={-100}
-                max={100}
-                onChange={(v) => handleWallColorChange('c', v)}
-              />
-            </div>
-          )}
-
-          {/* Wall set picker — horizontal carousel at the top */}
-          {getWallSetCount() > 0 && (
-            <div
-              style={{
-                display: 'flex',
-                gap: 4,
-                overflowX: 'auto',
-                flexWrap: 'nowrap',
-                paddingBottom: 2,
-              }}
-            >
-              {Array.from({ length: getWallSetCount() }, (_, i) => (
-                <WallSetPreview
-                  key={i}
-                  setIndex={i}
-                  color={wallColor}
-                  selected={selectedWallSet === i}
-                  onClick={() => onWallSetChange(i)}
-                />
+            {showColor && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '10px 12px', background: 'rgba(255,255,255,0.03)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.07)' }}>
+                <ColorSlider label="H" value={floorColor.h} min={0} max={360} onChange={v => handleColorChange('h', v)} />
+                <ColorSlider label="S" value={floorColor.s} min={0} max={100} onChange={v => handleColorChange('s', v)} />
+                <ColorSlider label="B" value={floorColor.b} min={-100} max={100} onChange={v => handleColorChange('b', v)} />
+                <ColorSlider label="C" value={floorColor.c} min={-100} max={100} onChange={v => handleColorChange('c', v)} />
+              </div>
+            )}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+              {floorPatterns.map(patIdx => (
+                <FloorPatternPreview key={patIdx} patternIndex={patIdx} color={floorColor}
+                  selected={selectedTileType === patIdx} onClick={() => onTileTypeChange(patIdx as TileTypeVal)} />
               ))}
             </div>
-          )}
-        </div>
-      )}
+          </>
+        )}
 
-      {/* Sub-panel: Furniture — stacked bottom-to-top via column-reverse */}
-      {isFurnitureActive && (
-        <div style={{ display: 'flex', flexDirection: 'column-reverse', gap: 4 }}>
-          {/* Category tabs + Pick — just above tool row */}
-          <div style={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
-            {getActiveCategories().map((cat) => (
-              <button
-                key={cat.id}
-                style={activeCategory === cat.id ? activeTabStyle : tabStyle}
-                onClick={() => setActiveCategory(cat.id)}
-              >
-                {cat.label}
-              </button>
-            ))}
-            <div
-              style={{
-                width: 1,
-                height: 14,
-                background: 'rgba(255,255,255,0.15)',
-                margin: '0 2px',
-                flexShrink: 0,
-              }}
-            />
-            <button
-              style={activeTool === EditTool.FURNITURE_PICK ? activeBtnStyle : btnStyle}
-              onClick={() => onToolChange(EditTool.FURNITURE_PICK)}
-              title="Pick furniture type from placed item"
-            >
-              Pick
-            </button>
-          </div>
-          {/* Furniture items — single-row horizontal carousel at 2x */}
-          <div
-            style={{
-              display: 'flex',
-              gap: 4,
-              overflowX: 'auto',
-              flexWrap: 'nowrap',
-              paddingBottom: 2,
-            }}
-          >
-            {categoryItems.map((entry) => {
-              const cached = getCachedSprite(entry.sprite, 2);
-              const isSelected = selectedFurnitureType === entry.type;
-              return (
-                <button
-                  key={entry.type}
-                  onClick={() => onFurnitureTypeChange(entry.type)}
-                  title={entry.label}
-                  style={{
-                    width: thumbSize,
-                    height: thumbSize,
-                    background: '#2A2A3A',
-                    border: isSelected ? '2px solid #5a8cff' : '2px solid #4a4a6a',
-                    borderRadius: 0,
-                    cursor: 'pointer',
-                    padding: 0,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    overflow: 'hidden',
-                    flexShrink: 0,
-                  }}
-                >
-                  <canvas
-                    ref={(el) => {
+        {/* Wall sub-panel */}
+        {isWallActive && (
+          <>
+            <button onClick={() => setShowWallColor(v => !v)} style={{
+              width: '100%', padding: '5px 0', fontSize: 12, fontFamily: FONT,
+              background: showWallColor ? 'rgba(90,140,255,0.15)' : 'rgba(255,255,255,0.05)',
+              border: `1px solid ${showWallColor ? 'rgba(90,140,255,0.4)' : 'rgba(255,255,255,0.1)'}`,
+              borderRadius: 6, cursor: 'pointer', color: showWallColor ? '#7aa3ff' : 'rgba(255,255,255,0.5)',
+            }}>Color</button>
+            {showWallColor && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '10px 12px', background: 'rgba(255,255,255,0.03)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.07)' }}>
+                <ColorSlider label="H" value={wallColor.h} min={0} max={360} onChange={v => handleWallColorChange('h', v)} />
+                <ColorSlider label="S" value={wallColor.s} min={0} max={100} onChange={v => handleWallColorChange('s', v)} />
+                <ColorSlider label="B" value={wallColor.b} min={-100} max={100} onChange={v => handleWallColorChange('b', v)} />
+                <ColorSlider label="C" value={wallColor.c} min={-100} max={100} onChange={v => handleWallColorChange('c', v)} />
+              </div>
+            )}
+            {getWallSetCount() > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                {Array.from({ length: getWallSetCount() }, (_, i) => (
+                  <WallSetPreview key={i} setIndex={i} color={wallColor}
+                    selected={selectedWallSet === i} onClick={() => onWallSetChange(i)} />
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Erase sub-panel */}
+        {isEraseActive && (
+          <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', fontFamily: FONT, margin: 0 }}>
+            Clique em tiles para apagá-los.
+          </p>
+        )}
+
+        {/* Furniture sub-panel */}
+        {isFurnitureActive && (
+          <>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+              {getActiveCategories().map(cat => (
+                <button key={cat.id} onClick={() => setActiveCategory(cat.id)} style={{
+                  padding: '4px 10px', fontSize: 11, fontFamily: FONT,
+                  background: activeCategory === cat.id ? 'rgba(90,140,255,0.2)' : 'rgba(255,255,255,0.05)',
+                  border: `1px solid ${activeCategory === cat.id ? 'rgba(90,140,255,0.5)' : 'rgba(255,255,255,0.1)'}`,
+                  borderRadius: 20, cursor: 'pointer',
+                  color: activeCategory === cat.id ? '#7aa3ff' : 'rgba(255,255,255,0.45)',
+                  fontWeight: activeCategory === cat.id ? 600 : 400,
+                }}>{cat.label}</button>
+              ))}
+              <button onClick={() => onToolChange(EditTool.FURNITURE_PICK)} style={{
+                padding: '4px 10px', fontSize: 11, fontFamily: FONT,
+                background: activeTool === EditTool.FURNITURE_PICK ? 'rgba(90,140,255,0.2)' : 'rgba(255,255,255,0.05)',
+                border: `1px solid ${activeTool === EditTool.FURNITURE_PICK ? 'rgba(90,140,255,0.5)' : 'rgba(255,255,255,0.1)'}`,
+                borderRadius: 20, cursor: 'pointer',
+                color: activeTool === EditTool.FURNITURE_PICK ? '#7aa3ff' : 'rgba(255,255,255,0.45)',
+              }}>Pick</button>
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+              {categoryItems.map(entry => {
+                const cached = getCachedSprite(entry.sprite, 2);
+                const isSelected = selectedFurnitureType === entry.type;
+                return (
+                  <button key={entry.type} onClick={() => onFurnitureTypeChange(entry.type)} title={entry.label} style={{
+                    width: thumbSize, height: thumbSize, padding: 0, flexShrink: 0,
+                    background: '#1e1e2e', cursor: 'pointer',
+                    border: isSelected ? '2px solid #5a8cff' : '2px solid rgba(255,255,255,0.1)',
+                    borderRadius: 4, overflow: 'hidden',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <canvas ref={el => {
                       if (!el) return;
                       const ctx = el.getContext('2d');
                       if (!ctx) return;
-                      const scale =
-                        Math.min(thumbSize / cached.width, thumbSize / cached.height) * 0.85;
-                      el.width = thumbSize;
-                      el.height = thumbSize;
+                      const scale = Math.min(thumbSize / cached.width, thumbSize / cached.height) * 0.85;
+                      el.width = thumbSize; el.height = thumbSize;
                       ctx.imageSmoothingEnabled = false;
                       ctx.clearRect(0, 0, thumbSize, thumbSize);
-                      const dw = cached.width * scale;
-                      const dh = cached.height * scale;
+                      const dw = cached.width * scale; const dh = cached.height * scale;
                       ctx.drawImage(cached, (thumbSize - dw) / 2, (thumbSize - dh) / 2, dw, dh);
-                    }}
-                    style={{ width: thumbSize, height: thumbSize }}
-                  />
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
+                    }} style={{ width: thumbSize, height: thumbSize }} />
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
 
-      {/* Selected furniture color panel — shows when any placed furniture item is selected */}
-      {selectedFurnitureUid && (
-        <div style={{ display: 'flex', flexDirection: 'column-reverse', gap: 3 }}>
-          <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-            <button
-              style={showFurnitureColor ? activeBtnStyle : btnStyle}
-              onClick={() => setShowFurnitureColor((v) => !v)}
-              title="Adjust selected furniture color"
-            >
-              Color
-            </button>
-            {selectedFurnitureColor && (
-              <button
-                style={{ ...btnStyle, fontSize: '20px', padding: '2px 6px' }}
-                onClick={() => onSelectedFurnitureColorChange(null)}
-                title="Remove color (restore original)"
-              >
-                Clear
-              </button>
+        {/* Selected furniture color */}
+        {selectedFurnitureUid && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 4, borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', fontFamily: FONT, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              Selected furniture
+            </div>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button onClick={() => setShowFurnitureColor(v => !v)} style={{
+                flex: 1, padding: '5px 0', fontSize: 12, fontFamily: FONT,
+                background: showFurnitureColor ? 'rgba(90,140,255,0.15)' : 'rgba(255,255,255,0.05)',
+                border: `1px solid ${showFurnitureColor ? 'rgba(90,140,255,0.4)' : 'rgba(255,255,255,0.1)'}`,
+                borderRadius: 6, cursor: 'pointer', color: showFurnitureColor ? '#7aa3ff' : 'rgba(255,255,255,0.5)',
+              }}>Color</button>
+              {selectedFurnitureColor && (
+                <button onClick={() => onSelectedFurnitureColorChange(null)} style={{
+                  flex: 1, padding: '5px 0', fontSize: 12, fontFamily: FONT,
+                  background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: 6, cursor: 'pointer', color: 'rgba(255,255,255,0.5)',
+                }}>Clear</button>
+              )}
+            </div>
+            {showFurnitureColor && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '10px 12px', background: 'rgba(255,255,255,0.03)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.07)' }}>
+                {effectiveColor.colorize ? (
+                  <>
+                    <ColorSlider label="H" value={effectiveColor.h} min={0} max={360} onChange={v => handleSelFurnColorChange('h', v)} />
+                    <ColorSlider label="S" value={effectiveColor.s} min={0} max={100} onChange={v => handleSelFurnColorChange('s', v)} />
+                  </>
+                ) : (
+                  <>
+                    <ColorSlider label="H" value={effectiveColor.h} min={-180} max={180} onChange={v => handleSelFurnColorChange('h', v)} />
+                    <ColorSlider label="S" value={effectiveColor.s} min={-100} max={100} onChange={v => handleSelFurnColorChange('s', v)} />
+                  </>
+                )}
+                <ColorSlider label="B" value={effectiveColor.b} min={-100} max={100} onChange={v => handleSelFurnColorChange('b', v)} />
+                <ColorSlider label="C" value={effectiveColor.c} min={-100} max={100} onChange={v => handleSelFurnColorChange('c', v)} />
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'rgba(255,255,255,0.45)', cursor: 'pointer', fontFamily: FONT }}>
+                  <input type="checkbox" checked={!!effectiveColor.colorize}
+                    onChange={e => onSelectedFurnitureColorChange({ ...effectiveColor, colorize: e.target.checked || undefined })}
+                    style={{ accentColor: '#5a8cff' }}
+                  />
+                  Colorize
+                </label>
+              </div>
             )}
           </div>
-          {showFurnitureColor && (
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 3,
-                padding: '4px 6px',
-                background: '#181828',
-                border: '2px solid #4a4a6a',
-                borderRadius: 0,
-              }}
-            >
-              {effectiveColor.colorize ? (
-                <>
-                  <ColorSlider
-                    label="H"
-                    value={effectiveColor.h}
-                    min={0}
-                    max={360}
-                    onChange={(v) => handleSelFurnColorChange('h', v)}
-                  />
-                  <ColorSlider
-                    label="S"
-                    value={effectiveColor.s}
-                    min={0}
-                    max={100}
-                    onChange={(v) => handleSelFurnColorChange('s', v)}
-                  />
-                </>
-              ) : (
-                <>
-                  <ColorSlider
-                    label="H"
-                    value={effectiveColor.h}
-                    min={-180}
-                    max={180}
-                    onChange={(v) => handleSelFurnColorChange('h', v)}
-                  />
-                  <ColorSlider
-                    label="S"
-                    value={effectiveColor.s}
-                    min={-100}
-                    max={100}
-                    onChange={(v) => handleSelFurnColorChange('s', v)}
-                  />
-                </>
-              )}
-              <ColorSlider
-                label="B"
-                value={effectiveColor.b}
-                min={-100}
-                max={100}
-                onChange={(v) => handleSelFurnColorChange('b', v)}
-              />
-              <ColorSlider
-                label="C"
-                value={effectiveColor.c}
-                min={-100}
-                max={100}
-                onChange={(v) => handleSelFurnColorChange('c', v)}
-              />
-              <label
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 4,
-                  fontSize: '20px',
-                  color: '#999',
-                  cursor: 'pointer',
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={!!effectiveColor.colorize}
-                  onChange={(e) =>
-                    onSelectedFurnitureColorChange({
-                      ...effectiveColor,
-                      colorize: e.target.checked || undefined,
-                    })
-                  }
-                  style={{ accentColor: 'rgba(90, 140, 255, 0.8)' }}
-                />
-                Colorize
-              </label>
-            </div>
-          )}
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
