@@ -11,7 +11,8 @@ const RESIDENT_COLORS: Record<number, string> = {
   6: '#38bdf8', // qa-tester       — sky blue
   7: '#f472b6', // data-custodian  — pink
   8: '#34d399', // service-ops     — emerald
-  9: '#fbbf24', // analytics       — amber
+  9: '#fbbf24', // analytics          — amber
+  10: '#f87171', // security-watchdog — red
 };
 
 const DYNAMIC_PALETTE = ['#a78bfa', '#38bdf8', '#fbbf24', '#34d399', '#f87171'];

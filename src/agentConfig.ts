@@ -23,4 +23,5 @@ export const CONFIGURED_AGENTS: AgentDef[] = [
   { name: 'data-custodian',  folderName: 'data-custodian',  color: '#f472b6' },
   { name: 'service-ops',     folderName: 'service-ops',     color: '#34d399' },
   { name: 'analytics',       folderName: 'analytics',       color: '#fbbf24' },
+  { name: 'security-watchdog', folderName: 'security-watchdog', color: '#f87171' },
 ];
