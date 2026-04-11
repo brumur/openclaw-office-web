@@ -290,6 +290,69 @@ office-web/
 
 ---
 
+## Upgrading from older versions
+
+### Pull latest and reinstall
+
+```bash
+git pull origin main
+npm install
+```
+
+### Key changes to be aware of
+
+#### RESIDENTS array in `server.js`
+
+The `RESIDENTS` array in `server.js` defines which agents are pre-announced to the frontend. If you customized this array in an older version, you'll need to update it. The current version registers **all 10 configured agents** with `alwaysAnnounce: true`:
+
+```javascript
+const RESIDENTS = [
+  { id: 1,  name: 'Jarvis',            sessionKey: 'agent:main:main',              alwaysAnnounce: true },
+  { id: 3,  name: 'Dev',               sessionKey: 'agent:dev:dev',                alwaysAnnounce: true },
+  { id: 4,  name: 'Infra',             sessionKey: 'agent:infra:infra',            alwaysAnnounce: true },
+  // ... all other agents
+];
+```
+
+**To add a new agent**, you need to update **both** files:
+
+1. **`server.js` → `RESIDENTS`** — Add an entry with a unique `id`, the agent `name` (matching OpenClaw folder), the full `sessionKey`, and `alwaysAnnounce: true`
+2. **`src/agentConfig.ts` → `CONFIGURED_AGENTS`** — Add an entry with `name`, `folderName`, and `color`
+
+The `sessionKey` format is `agent:<workspace>:<agent-name>`. For agents in the main workspace, it's `agent:main:<agent-name>`. For agents with dedicated workspaces (like Dev or Infra), it's `agent:<workspace>:<workspace>`.
+
+> **Important:** Agent IDs must be unique and never reuse a previously deleted ID (to avoid localStorage chat history collisions). The `nextAgentId` is calculated automatically from the highest ID in `RESIDENTS`.
+
+#### Lexi removed
+
+Agent "Lexi" (id 2) was removed. If your local `agentColors.ts` or `server.js` still references Lexi, delete those entries. ID 2 is reserved/unused.
+
+#### Offline placeholder system
+
+Configured agents that aren't connected to OpenClaw now appear as semi-transparent (35% opacity) characters in the Pixel Office and as "OFFLINE" cards in the Dashboard. No action needed — this works automatically based on `CONFIGURED_AGENTS`.
+
+#### Navigation overhaul
+
+The old `BottomToolbar` was replaced with a responsive navigation system:
+- **Desktop:** Collapsible sidebar (left side)
+- **Mobile:** Bottom tab bar
+
+If you had custom CSS targeting `BottomToolbar`, remove it.
+
+#### localStorage keys
+
+If the office layout looks broken after updating, clear the cached layout:
+
+```javascript
+// In browser console
+localStorage.removeItem('pixel-office-layout');
+localStorage.removeItem('pixel-office-editMode');
+```
+
+The layout will regenerate from the bundled default on next reload.
+
+---
+
 ## Roadmap
 
 - [ ] Firebase Auth (Google Sign-In) for production auth
