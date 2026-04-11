@@ -135,9 +135,9 @@ let bridgeStatus = 'connecting';
 // (e.g. Jarvis is always running). Others are only announced when their first
 // OpenClaw event arrives, and can go offline (showing as placeholder in the office).
 const RESIDENTS = [
-  { id: 1, name: 'Jarvis', sessionKey: 'agent:main:main',   alwaysAnnounce: true  },
-  { id: 3, name: 'Dev',    sessionKey: 'agent:dev:dev',     alwaysAnnounce: false },
-  { id: 4, name: 'Infra',  sessionKey: 'agent:infra:infra', alwaysAnnounce: false },
+  { id: 1, name: 'Jarvis', sessionKey: 'agent:main:main',   alwaysAnnounce: true },
+  { id: 3, name: 'Dev',    sessionKey: 'agent:dev:dev',     alwaysAnnounce: true },
+  { id: 4, name: 'Infra',  sessionKey: 'agent:infra:infra', alwaysAnnounce: true },
 ];
 
 let nextAgentId = Math.max(...RESIDENTS.map(r => r.id)) + 1;
