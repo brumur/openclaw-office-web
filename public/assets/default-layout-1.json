@@ -3563,19 +3563,19 @@
     {
       "uid": "f-default-5",
       "type": "DESK_FRONT",
-      "col": 3,
+      "col": 2,
       "row": 1
     },
     {
       "uid": "f-default-6",
       "type": "PC_FRONT_OFF",
-      "col": 4,
+      "col": 3,
       "row": 1
     },
     {
       "uid": "f-default-7",
       "type": "CUSHIONED_BENCH",
-      "col": 4,
+      "col": 3,
       "row": 3
     },
     {
@@ -3912,55 +3912,55 @@
       "uid": "f-default-63",
       "type": "SMALL_TABLE_FRONT",
       "col": 22,
-      "row": 12
+      "row": 10
     },
     {
       "uid": "f-default-64",
       "type": "WOODEN_CHAIR_SIDE",
       "col": 21,
-      "row": 13
+      "row": 11
     },
     {
       "uid": "f-default-65",
       "type": "WOODEN_CHAIR_SIDE:left",
       "col": 24,
-      "row": 13
+      "row": 11
     },
     {
       "uid": "f-default-66",
-      "type": "SMALL_TABLE_FRONT",
+      "type": "COFFEE",
       "col": 22,
-      "row": 14
+      "row": 11
     },
     {
       "uid": "f-default-67",
-      "type": "WOODEN_CHAIR_SIDE",
-      "col": 21,
-      "row": 15
+      "type": "SMALL_TABLE_FRONT",
+      "col": 22,
+      "row": 13
     },
     {
       "uid": "f-default-68",
-      "type": "WOODEN_CHAIR_SIDE:left",
-      "col": 24,
-      "row": 15
+      "type": "WOODEN_CHAIR_SIDE",
+      "col": 21,
+      "row": 14
     },
     {
       "uid": "f-default-69",
-      "type": "BIN",
-      "col": 26,
-      "row": 16
+      "type": "WOODEN_CHAIR_SIDE:left",
+      "col": 24,
+      "row": 14
     },
     {
       "uid": "f-default-70",
       "type": "COFFEE",
       "col": 22,
-      "row": 13
+      "row": 14
     },
     {
       "uid": "f-default-71",
-      "type": "COFFEE",
-      "col": 22,
-      "row": 15
+      "type": "BIN",
+      "col": 26,
+      "row": 16
     }
   ]
 }

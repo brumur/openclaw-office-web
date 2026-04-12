@@ -136,10 +136,10 @@ place('DOUBLE_BOOKSHELF', 1, -1);    // Bookshelf on top wall
 place('CLOCK', 6, -1);               // Clock on top wall
 place('SMALL_PAINTING', 4, -1);      // Painting on top wall
 place('PLANT', 8, 1);                // Plant on floor near wall
-// Desk + PC + bench (PC on desk surface, bench aligned with PC)
-place('DESK_FRONT', 3, 1);           // Desk at rows 1-2 (3 tiles wide: cols 3-5)
-place('PC_FRONT_OFF', 4, 1);         // PC on desk surface (col 4)
-place('CUSHIONED_BENCH', 4, 3);      // Bench facing PC (col 4, in front of desk)
+// Desk + PC + bench shifted 1 left
+place('DESK_FRONT', 2, 1);           // Desk at rows 1-2 (3 tiles wide: cols 2-4)
+place('PC_FRONT_OFF', 3, 1);         // PC on desk surface (col 3)
+place('CUSHIONED_BENCH', 3, 3);      // Bench facing PC (col 3, in front of desk)
 place('SMALL_TABLE_FRONT', 7, 4);    // Side table
 place('COFFEE', 7, 5);               // Coffee on side table
 place('BIN', 1, 7);                  // Bin
@@ -219,17 +219,17 @@ place('CUSHIONED_BENCH', 14, 13);    // Foot of table (adjacent below)
 // Wall decorations
 place('DOUBLE_BOOKSHELF', 21, 7);    // On middle wall
 place('HANGING_PLANT', 25, 7);       // On middle wall
-// Furniture
+// Furniture — tables and chairs moved up and aligned
 place('PLANT', 26, 9);               // Plant on floor
-place('SMALL_TABLE_FRONT', 22, 12);
-place('WOODEN_CHAIR_SIDE', 21, 13);
-place('WOODEN_CHAIR_SIDE:left', 24, 13);
-place('SMALL_TABLE_FRONT', 22, 14);
-place('WOODEN_CHAIR_SIDE', 21, 15);
-place('WOODEN_CHAIR_SIDE:left', 24, 15);
+place('SMALL_TABLE_FRONT', 22, 10);  // Table 1: rows 10-11
+place('WOODEN_CHAIR_SIDE', 21, 11);  // Chair left, aligned with table bottom
+place('WOODEN_CHAIR_SIDE:left', 24, 11); // Chair right, aligned
+place('COFFEE', 22, 11);             // Coffee on table
+place('SMALL_TABLE_FRONT', 22, 13);  // Table 2: rows 13-14
+place('WOODEN_CHAIR_SIDE', 21, 14);  // Chair left, aligned with table bottom
+place('WOODEN_CHAIR_SIDE:left', 24, 14); // Chair right, aligned
+place('COFFEE', 22, 14);             // Coffee on table
 place('BIN', 26, 16);
-place('COFFEE', 22, 13);
-place('COFFEE', 22, 15);
 
 // ═══════════════════════════════════════════
 
