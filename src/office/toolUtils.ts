@@ -19,10 +19,18 @@ export function extractToolName(status: string): string | null {
   return first || null;
 }
 
-import { ZOOM_DEFAULT_DPR_FACTOR, ZOOM_MIN } from '../constants.js';
+import { DEFAULT_COLS, DEFAULT_ROWS, TILE_SIZE, ZOOM_MAX, ZOOM_MIN } from '../constants.js';
 
-/** Compute a default integer zoom level (device pixels per sprite pixel) */
+/**
+ * Compute a default zoom level that auto-fits the map to ~85% of the viewport.
+ * Falls back to a sensible DPR-based minimum on very small screens.
+ */
 export function defaultZoom(): number {
   const dpr = window.devicePixelRatio || 1;
-  return Math.max(ZOOM_MIN, Math.round(ZOOM_DEFAULT_DPR_FACTOR * dpr));
+  const canvasW = window.innerWidth * dpr;
+  const canvasH = window.innerHeight * dpr;
+  const mapW = DEFAULT_COLS * TILE_SIZE;
+  const mapH = DEFAULT_ROWS * TILE_SIZE;
+  const fitZoom = Math.floor(Math.min((canvasW * 0.85) / mapW, (canvasH * 0.85) / mapH));
+  return Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, fitZoom));
 }

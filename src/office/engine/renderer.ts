@@ -604,6 +604,17 @@ export function renderFrame(
   const offsetX = Math.floor((canvasWidth - mapW) / 2) + Math.round(panX);
   const offsetY = Math.floor((canvasHeight - mapH) / 2) + Math.round(panY);
 
+  // Ambient glow — soft light emanating from the map
+  const glowCx = offsetX + mapW / 2;
+  const glowCy = offsetY + mapH / 2;
+  const glowR = Math.max(mapW, mapH) * 0.75;
+  const glow = ctx.createRadialGradient(glowCx, glowCy, Math.min(mapW, mapH) * 0.3, glowCx, glowCy, glowR);
+  glow.addColorStop(0, 'rgba(90, 140, 255, 0.06)');
+  glow.addColorStop(0.5, 'rgba(70, 120, 200, 0.03)');
+  glow.addColorStop(1, 'transparent');
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
   // Draw tiles (floor + wall base color)
   renderTileGrid(ctx, tileMap, offsetX, offsetY, zoom, tileColors, layoutCols);
 

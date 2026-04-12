@@ -14,18 +14,20 @@ interface ZoomControlsProps {
 }
 
 const btnBase: React.CSSProperties = {
-  width: 40,
-  height: 40,
+  width: 32,
+  height: 32,
   padding: 0,
-  background: 'var(--pixel-bg)',
-  color: 'var(--pixel-text)',
-  border: '2px solid var(--pixel-border)',
-  borderRadius: 0,
+  background: 'rgba(15, 15, 25, 0.7)',
+  backdropFilter: 'blur(8px)',
+  WebkitBackdropFilter: 'blur(8px)',
+  color: 'rgba(255, 255, 255, 0.7)',
+  border: '1px solid rgba(255, 255, 255, 0.1)',
+  borderRadius: '50%',
   cursor: 'pointer',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  boxShadow: 'var(--pixel-shadow)',
+  transition: 'background 0.15s ease, color 0.15s ease',
 };
 
 export function ZoomControls({ zoom, onZoomChange }: ZoomControlsProps) {
@@ -70,42 +72,44 @@ export function ZoomControls({ zoom, onZoomChange }: ZoomControlsProps) {
 
   return (
     <>
-      {/* Zoom level indicator at top-center */}
+      {/* Zoom level indicator — bottom-right, above buttons */}
       {showLevel && (
         <div
           style={{
             position: 'absolute',
-            top: 10,
-            left: '50%',
-            transform: 'translateX(-50%)',
+            bottom: 86,
+            right: 16,
             zIndex: 'var(--pixel-controls-z)',
-            background: 'var(--pixel-bg)',
-            border: '2px solid var(--pixel-border)',
-            borderRadius: 0,
-            padding: '4px 12px',
-            boxShadow: 'var(--pixel-shadow)',
-            fontSize: '26px',
-            color: 'var(--pixel-text)',
+            background: 'rgba(15, 15, 25, 0.8)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: 12,
+            padding: '3px 10px',
+            fontSize: '13px',
+            fontFamily: 'system-ui, sans-serif',
+            fontWeight: 500,
+            color: 'rgba(255, 255, 255, 0.7)',
             userSelect: 'none',
             opacity: fadeOut ? 0 : 1,
             transition: `opacity ${ZOOM_LEVEL_FADE_DURATION_SEC}s ease-out`,
             pointerEvents: 'none',
           }}
         >
-          {zoom}x
+          {zoom}×
         </div>
       )}
 
-      {/* Vertically stacked round buttons — top-left */}
+      {/* Compact round buttons — bottom-right */}
       <div
         style={{
           position: 'absolute',
-          top: 8,
-          left: 8,
+          bottom: 16,
+          right: 16,
           zIndex: 'var(--pixel-controls-z)',
           display: 'flex',
           flexDirection: 'column',
-          gap: 4,
+          gap: 6,
         }}
       >
         <button
@@ -116,31 +120,17 @@ export function ZoomControls({ zoom, onZoomChange }: ZoomControlsProps) {
           style={{
             ...btnBase,
             background:
-              hovered === 'plus' && !maxDisabled ? 'var(--pixel-btn-hover-bg)' : btnBase.background,
+              hovered === 'plus' && !maxDisabled ? 'rgba(90, 140, 255, 0.3)' : btnBase.background,
+            color:
+              hovered === 'plus' && !maxDisabled ? '#fff' : btnBase.color,
             cursor: maxDisabled ? 'default' : 'pointer',
-            opacity: maxDisabled ? 'var(--pixel-btn-disabled-opacity)' : 1,
+            opacity: maxDisabled ? 0.3 : 1,
           }}
           title="Zoom in (Ctrl+Scroll)"
         >
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-            <line
-              x1="9"
-              y1="3"
-              x2="9"
-              y2="15"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-            />
-            <line
-              x1="3"
-              y1="9"
-              x2="15"
-              y2="9"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-            />
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <line x1="7" y1="2" x2="7" y2="12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            <line x1="2" y1="7" x2="12" y2="7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
         </button>
         <button
@@ -151,24 +141,16 @@ export function ZoomControls({ zoom, onZoomChange }: ZoomControlsProps) {
           style={{
             ...btnBase,
             background:
-              hovered === 'minus' && !minDisabled
-                ? 'var(--pixel-btn-hover-bg)'
-                : btnBase.background,
+              hovered === 'minus' && !minDisabled ? 'rgba(90, 140, 255, 0.3)' : btnBase.background,
+            color:
+              hovered === 'minus' && !minDisabled ? '#fff' : btnBase.color,
             cursor: minDisabled ? 'default' : 'pointer',
-            opacity: minDisabled ? 'var(--pixel-btn-disabled-opacity)' : 1,
+            opacity: minDisabled ? 0.3 : 1,
           }}
           title="Zoom out (Ctrl+Scroll)"
         >
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-            <line
-              x1="3"
-              y1="9"
-              x2="15"
-              y2="9"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-            />
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <line x1="2" y1="7" x2="12" y2="7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
         </button>
       </div>

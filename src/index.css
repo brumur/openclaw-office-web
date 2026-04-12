@@ -40,8 +40,8 @@
   --pixel-danger-bg: #a33;
   --pixel-warning-text: #f59e0b;
 
-  /* Vignette */
-  --pixel-vignette: radial-gradient(ellipse at center, transparent 50%, rgba(0, 0, 0, 0.6) 100%);
+  /* Vignette — tighter spotlight */
+  --pixel-vignette: radial-gradient(ellipse at center, transparent 35%, rgba(0, 0, 0, 0.4) 65%, rgba(0, 0, 0, 0.75) 100%);
 
   /* Status dot colors */
   --pixel-status-permission: var(--vscode-charts-yellow, #cca700);
@@ -108,3 +108,34 @@ body,
 }
 .md-content a { color: #7dd3fc; }
 .md-content hr { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 10px 0; }
+
+/* ── Office canvas ambient background ────────────────────────────────────── */
+.office-canvas-bg {
+  background:
+    /* Ambient glows */
+    radial-gradient(ellipse at 20% 15%, rgba(90, 140, 255, 0.07) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 85%, rgba(90, 200, 140, 0.05) 0%, transparent 45%),
+    radial-gradient(ellipse at 50% 50%, rgba(90, 140, 255, 0.03) 0%, transparent 60%),
+    /* Star field tile */
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Ccircle cx='12' cy='18' r='0.6' fill='rgba(255,255,255,0.18)'/%3E%3Ccircle cx='67' cy='42' r='0.4' fill='rgba(255,255,255,0.12)'/%3E%3Ccircle cx='134' cy='11' r='0.7' fill='rgba(255,255,255,0.2)'/%3E%3Ccircle cx='180' cy='56' r='0.5' fill='rgba(255,255,255,0.1)'/%3E%3Ccircle cx='23' cy='89' r='0.5' fill='rgba(255,255,255,0.14)'/%3E%3Ccircle cx='98' cy='73' r='0.8' fill='rgba(255,255,255,0.22)'/%3E%3Ccircle cx='156' cy='98' r='0.4' fill='rgba(255,255,255,0.1)'/%3E%3Ccircle cx='45' cy='134' r='0.6' fill='rgba(255,255,255,0.16)'/%3E%3Ccircle cx='112' cy='145' r='0.5' fill='rgba(255,255,255,0.12)'/%3E%3Ccircle cx='178' cy='132' r='0.7' fill='rgba(255,255,255,0.18)'/%3E%3Ccircle cx='34' cy='178' r='0.4' fill='rgba(255,255,255,0.1)'/%3E%3Ccircle cx='88' cy='189' r='0.6' fill='rgba(255,255,255,0.15)'/%3E%3Ccircle cx='145' cy='172' r='0.5' fill='rgba(255,255,255,0.13)'/%3E%3Ccircle cx='190' cy='185' r='0.3' fill='rgba(255,255,255,0.08)'/%3E%3Ccircle cx='56' cy='56' r='0.3' fill='rgba(255,255,255,0.08)'/%3E%3Ccircle cx='167' cy='34' r='0.5' fill='rgba(255,255,255,0.11)'/%3E%3Ccircle cx='78' cy='112' r='0.4' fill='rgba(255,255,255,0.09)'/%3E%3Ccircle cx='123' cy='67' r='0.3' fill='rgba(255,255,255,0.07)'/%3E%3C/svg%3E"),
+    /* Base gradient */
+    linear-gradient(170deg, #0f0f1a 0%, #161628 35%, #1a1a30 65%, #12121f 100%);
+}
+
+/* Twinkling star layer (CSS animation) */
+.office-canvas-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Ccircle cx='45' cy='23' r='1' fill='rgba(180,200,255,0.3)'/%3E%3Ccircle cx='210' cy='78' r='0.8' fill='rgba(180,220,255,0.25)'/%3E%3Ccircle cx='123' cy='156' r='1.1' fill='rgba(200,180,255,0.28)'/%3E%3Ccircle cx='267' cy='234' r='0.9' fill='rgba(180,200,255,0.22)'/%3E%3Ccircle cx='78' cy='267' r='1' fill='rgba(200,220,255,0.3)'/%3E%3Ccircle cx='189' cy='12' r='0.7' fill='rgba(180,200,255,0.2)'/%3E%3Ccircle cx='34' cy='145' r='0.9' fill='rgba(220,200,255,0.26)'/%3E%3Ccircle cx='256' cy='134' r='1.2' fill='rgba(180,200,255,0.32)'/%3E%3C/svg%3E");
+  animation: office-twinkle 4s ease-in-out infinite alternate;
+}
+
+@keyframes office-twinkle {
+  0% { opacity: 0.3; }
+  50% { opacity: 0.8; }
+  100% { opacity: 0.4; }
+}

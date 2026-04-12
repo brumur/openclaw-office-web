@@ -58,11 +58,9 @@ export function Sidebar({
     display: 'flex',
     flexDirection: 'column',
     background: isOfficeView
-      ? 'rgba(30, 30, 46, 0.85)'
+      ? 'transparent'
       : 'var(--pixel-bg)',
-    backdropFilter: isOfficeView ? 'blur(12px)' : undefined,
-    WebkitBackdropFilter: isOfficeView ? 'blur(12px)' : undefined,
-    borderRight: '2px solid var(--pixel-border)',
+    borderRight: isOfficeView ? 'none' : '2px solid var(--pixel-border)',
     transition: 'width 0.2s ease',
     overflow: 'hidden',
   };
@@ -72,7 +70,7 @@ export function Sidebar({
     display: 'flex',
     alignItems: 'center',
     justifyContent: collapsed ? 'center' : 'space-between',
-    borderBottom: '1px solid var(--pixel-border)',
+    borderBottom: isOfficeView ? 'none' : '1px solid var(--pixel-border)',
     minHeight: 52,
   };
 
@@ -155,7 +153,7 @@ export function Sidebar({
           <div style={{ flex: 1 }} />
 
           {/* Settings + Logout — bottom */}
-          <div style={{ borderTop: '1px solid var(--pixel-border)', paddingTop: 8, paddingBottom: 8 }}>
+          <div style={{ borderTop: isOfficeView ? 'none' : '1px solid var(--pixel-border)', paddingTop: 8, paddingBottom: 8 }}>
             <NavItem
               icon={<SettingsIcon size={20} />}
               label="Settings"
