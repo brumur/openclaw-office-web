@@ -169,16 +169,16 @@ place('DOUBLE_BOOKSHELF', 20, -1);   // On top wall
 place('LARGE_PAINTING', 24, -1);     // On top wall
 place('PLANT', 26, 1);               // Plant on floor
 
-// Side desk arrangement: same pattern as workspace
-place('TABLE_FRONT', 21, 2);         // Table cols 21-23, rows 2-3
-place('PC_SIDE', 21, 2);             // PC on left side
-place('PC_SIDE', 21, 4);             // PC below
-place('WOODEN_CHAIR_SIDE', 20, 2);   // Chair left
-place('WOODEN_CHAIR_SIDE', 20, 4);   // Chair left
-place('PC_SIDE:left', 23, 2);        // PC on right side (mirrored)
-place('PC_SIDE:left', 23, 4);        // PC below
-place('WOODEN_CHAIR_SIDE:left', 24, 2); // Chair right
-place('WOODEN_CHAIR_SIDE:left', 24, 4); // Chair right
+// Side desk arrangement: same pattern as workspace (shifted 2 right)
+place('TABLE_FRONT', 23, 2);         // Table cols 23-25, rows 2-3
+place('PC_SIDE', 23, 2);             // PC on left side
+place('PC_SIDE', 23, 4);             // PC below
+place('WOODEN_CHAIR_SIDE', 22, 2);   // Chair left
+place('WOODEN_CHAIR_SIDE', 22, 4);   // Chair left
+place('PC_SIDE:left', 25, 2);        // PC on right side (mirrored)
+place('PC_SIDE:left', 25, 4);        // PC below
+place('WOODEN_CHAIR_SIDE:left', 26, 2); // Chair right
+place('WOODEN_CHAIR_SIDE:left', 26, 4); // Chair right
 
 place('BIN', 26, 7);
 
