@@ -2,7 +2,7 @@
   "version": 1,
   "cols": 28,
   "rows": 18,
-  "layoutRevision": 2,
+  "layoutRevision": 3,
   "tiles": [
     0,
     0,
@@ -3562,405 +3562,531 @@
     },
     {
       "uid": "f-default-5",
-      "type": "DESK_FRONT",
-      "col": 2,
-      "row": 1
+      "type": "TABLE_FRONT",
+      "col": 3,
+      "row": 2
     },
     {
       "uid": "f-default-6",
-      "type": "PC_FRONT_OFF",
+      "type": "PC_SIDE",
       "col": 3,
-      "row": 1
+      "row": 2
     },
     {
       "uid": "f-default-7",
-      "type": "CUSHIONED_BENCH",
-      "col": 3,
-      "row": 3
+      "type": "WOODEN_CHAIR_SIDE",
+      "col": 2,
+      "row": 2
     },
     {
       "uid": "f-default-8",
+      "type": "PC_SIDE:left",
+      "col": 5,
+      "row": 2
+    },
+    {
+      "uid": "f-default-9",
+      "type": "WOODEN_CHAIR_SIDE:left",
+      "col": 6,
+      "row": 2
+    },
+    {
+      "uid": "f-default-10",
       "type": "SMALL_TABLE_FRONT",
       "col": 7,
       "row": 4
     },
     {
-      "uid": "f-default-9",
+      "uid": "f-default-11",
       "type": "COFFEE",
       "col": 7,
       "row": 5
     },
     {
-      "uid": "f-default-10",
+      "uid": "f-default-12",
       "type": "BIN",
       "col": 1,
       "row": 7
     },
     {
-      "uid": "f-default-11",
+      "uid": "f-default-13",
       "type": "HANGING_PLANT",
       "col": 12,
       "row": -1
     },
     {
-      "uid": "f-default-12",
+      "uid": "f-default-14",
       "type": "HANGING_PLANT",
       "col": 17,
       "row": -1
     },
     {
-      "uid": "f-default-13",
+      "uid": "f-default-15",
       "type": "PLANT_2",
       "col": 11,
       "row": 1
     },
     {
-      "uid": "f-default-14",
+      "uid": "f-default-16",
       "type": "PLANT",
       "col": 18,
       "row": 1
     },
     {
-      "uid": "f-default-15",
+      "uid": "f-default-17",
       "type": "TABLE_FRONT",
       "col": 13,
       "row": 2
     },
     {
-      "uid": "f-default-16",
-      "type": "PC_SIDE",
-      "col": 13,
-      "row": 2
-    },
-    {
-      "uid": "f-default-17",
-      "type": "PC_SIDE",
-      "col": 13,
-      "row": 4
-    },
-    {
       "uid": "f-default-18",
-      "type": "WOODEN_CHAIR_SIDE",
-      "col": 12,
+      "type": "PC_SIDE",
+      "col": 13,
       "row": 2
     },
     {
       "uid": "f-default-19",
+      "type": "PC_SIDE",
+      "col": 13,
+      "row": 4
+    },
+    {
+      "uid": "f-default-20",
+      "type": "WOODEN_CHAIR_SIDE",
+      "col": 12,
+      "row": 2
+    },
+    {
+      "uid": "f-default-21",
       "type": "WOODEN_CHAIR_SIDE",
       "col": 12,
       "row": 4
     },
     {
-      "uid": "f-default-20",
-      "type": "PC_SIDE:left",
-      "col": 15,
-      "row": 2
-    },
-    {
-      "uid": "f-default-21",
-      "type": "PC_SIDE:left",
-      "col": 15,
-      "row": 4
-    },
-    {
       "uid": "f-default-22",
-      "type": "WOODEN_CHAIR_SIDE:left",
-      "col": 16,
+      "type": "PC_SIDE:left",
+      "col": 15,
       "row": 2
     },
     {
       "uid": "f-default-23",
+      "type": "PC_SIDE:left",
+      "col": 15,
+      "row": 4
+    },
+    {
+      "uid": "f-default-24",
+      "type": "WOODEN_CHAIR_SIDE:left",
+      "col": 16,
+      "row": 2
+    },
+    {
+      "uid": "f-default-25",
       "type": "WOODEN_CHAIR_SIDE:left",
       "col": 16,
       "row": 4
     },
     {
-      "uid": "f-default-24",
+      "uid": "f-default-26",
       "type": "DOUBLE_BOOKSHELF",
       "col": 20,
       "row": -1
     },
     {
-      "uid": "f-default-25",
+      "uid": "f-default-27",
       "type": "LARGE_PAINTING",
       "col": 24,
       "row": -1
     },
     {
-      "uid": "f-default-26",
+      "uid": "f-default-28",
       "type": "PLANT",
       "col": 26,
       "row": 1
     },
     {
-      "uid": "f-default-27",
+      "uid": "f-default-29",
       "type": "TABLE_FRONT",
       "col": 22,
       "row": 2
     },
     {
-      "uid": "f-default-28",
-      "type": "PC_SIDE",
-      "col": 22,
-      "row": 2
-    },
-    {
-      "uid": "f-default-29",
-      "type": "PC_SIDE",
-      "col": 22,
-      "row": 4
-    },
-    {
       "uid": "f-default-30",
-      "type": "WOODEN_CHAIR_SIDE",
-      "col": 21,
+      "type": "PC_SIDE",
+      "col": 22,
       "row": 2
     },
     {
       "uid": "f-default-31",
+      "type": "PC_SIDE",
+      "col": 22,
+      "row": 4
+    },
+    {
+      "uid": "f-default-32",
+      "type": "WOODEN_CHAIR_SIDE",
+      "col": 21,
+      "row": 2
+    },
+    {
+      "uid": "f-default-33",
       "type": "WOODEN_CHAIR_SIDE",
       "col": 21,
       "row": 4
     },
     {
-      "uid": "f-default-32",
-      "type": "PC_SIDE:left",
-      "col": 24,
-      "row": 2
-    },
-    {
-      "uid": "f-default-33",
-      "type": "PC_SIDE:left",
-      "col": 24,
-      "row": 4
-    },
-    {
       "uid": "f-default-34",
-      "type": "WOODEN_CHAIR_SIDE:left",
-      "col": 25,
+      "type": "PC_SIDE:left",
+      "col": 24,
       "row": 2
     },
     {
       "uid": "f-default-35",
+      "type": "PC_SIDE:left",
+      "col": 24,
+      "row": 4
+    },
+    {
+      "uid": "f-default-36",
+      "type": "WOODEN_CHAIR_SIDE:left",
+      "col": 25,
+      "row": 2
+    },
+    {
+      "uid": "f-default-37",
       "type": "WOODEN_CHAIR_SIDE:left",
       "col": 25,
       "row": 4
     },
     {
-      "uid": "f-default-36",
+      "uid": "f-default-38",
       "type": "BIN",
       "col": 26,
       "row": 7
     },
     {
-      "uid": "f-default-37",
+      "uid": "f-default-39",
       "type": "HANGING_PLANT",
       "col": 2,
       "row": 7
     },
     {
-      "uid": "f-default-38",
-      "type": "SMALL_PAINTING_2",
-      "col": 7,
+      "uid": "f-default-40",
+      "type": "BOOKSHELF",
+      "col": 5,
       "row": 7
     },
     {
-      "uid": "f-default-39",
-      "type": "SOFA_FRONT",
-      "col": 3,
-      "row": 10
-    },
-    {
-      "uid": "f-default-40",
-      "type": "SOFA_BACK",
-      "col": 3,
-      "row": 13
-    },
-    {
       "uid": "f-default-41",
-      "type": "SOFA_SIDE",
-      "col": 2,
-      "row": 11
+      "type": "SMALL_PAINTING_2",
+      "col": 8,
+      "row": 7
     },
     {
       "uid": "f-default-42",
-      "type": "SOFA_SIDE:left",
-      "col": 5,
-      "row": 11
-    },
-    {
-      "uid": "f-default-43",
-      "type": "COFFEE_TABLE",
-      "col": 3,
-      "row": 11
-    },
-    {
-      "uid": "f-default-44",
-      "type": "COFFEE",
-      "col": 3,
-      "row": 12
-    },
-    {
-      "uid": "f-default-45",
       "type": "PLANT_2",
       "col": 1,
       "row": 9
     },
     {
-      "uid": "f-default-46",
+      "uid": "f-default-43",
       "type": "PLANT",
-      "col": 8,
+      "col": 9,
       "row": 9
     },
     {
+      "uid": "f-default-44",
+      "type": "CACTUS",
+      "col": 1,
+      "row": 12
+    },
+    {
+      "uid": "f-default-45",
+      "type": "POT",
+      "col": 9,
+      "row": 16
+    },
+    {
+      "uid": "f-default-46",
+      "type": "SOFA_FRONT",
+      "col": 3,
+      "row": 10
+    },
+    {
       "uid": "f-default-47",
-      "type": "SMALL_TABLE_FRONT",
-      "col": 7,
-      "row": 14
+      "type": "SOFA_BACK",
+      "col": 3,
+      "row": 13
     },
     {
       "uid": "f-default-48",
-      "type": "COFFEE",
-      "col": 7,
-      "row": 15
+      "type": "SOFA_SIDE",
+      "col": 2,
+      "row": 11
     },
     {
       "uid": "f-default-49",
+      "type": "SOFA_SIDE:left",
+      "col": 5,
+      "row": 11
+    },
+    {
+      "uid": "f-default-50",
+      "type": "COFFEE_TABLE",
+      "col": 3,
+      "row": 11
+    },
+    {
+      "uid": "f-default-51",
+      "type": "COFFEE",
+      "col": 3,
+      "row": 12
+    },
+    {
+      "uid": "f-default-52",
+      "type": "SMALL_TABLE_FRONT",
+      "col": 7,
+      "row": 10
+    },
+    {
+      "uid": "f-default-53",
+      "type": "COFFEE",
+      "col": 7,
+      "row": 11
+    },
+    {
+      "uid": "f-default-54",
+      "type": "LARGE_PLANT",
+      "col": 8,
+      "row": 12
+    },
+    {
+      "uid": "f-default-55",
+      "type": "CUSHIONED_CHAIR_SIDE:left",
+      "col": 2,
+      "row": 15
+    },
+    {
+      "uid": "f-default-56",
+      "type": "SMALL_TABLE_FRONT",
+      "col": 1,
+      "row": 15
+    },
+    {
+      "uid": "f-default-57",
+      "type": "DESK_FRONT",
+      "col": 5,
+      "row": 14
+    },
+    {
+      "uid": "f-default-58",
+      "type": "PC_SIDE",
+      "col": 5,
+      "row": 14
+    },
+    {
+      "uid": "f-default-59",
+      "type": "WOODEN_CHAIR_SIDE",
+      "col": 4,
+      "row": 14
+    },
+    {
+      "uid": "f-default-60",
       "type": "WHITEBOARD",
       "col": 12,
       "row": 7
     },
     {
-      "uid": "f-default-50",
+      "uid": "f-default-61",
       "type": "SMALL_PAINTING",
       "col": 17,
       "row": 7
     },
     {
-      "uid": "f-default-51",
+      "uid": "f-default-62",
       "type": "PLANT",
       "col": 11,
       "row": 9
     },
     {
-      "uid": "f-default-52",
+      "uid": "f-default-63",
       "type": "PLANT_2",
       "col": 18,
       "row": 9
     },
     {
-      "uid": "f-default-53",
+      "uid": "f-default-64",
+      "type": "CACTUS",
+      "col": 18,
+      "row": 14
+    },
+    {
+      "uid": "f-default-65",
+      "type": "BIN",
+      "col": 11,
+      "row": 16
+    },
+    {
+      "uid": "f-default-66",
       "type": "TABLE_FRONT",
       "col": 13,
-      "row": 11
-    },
-    {
-      "uid": "f-default-54",
-      "type": "WOODEN_CHAIR_SIDE",
-      "col": 12,
-      "row": 11
-    },
-    {
-      "uid": "f-default-55",
-      "type": "WOODEN_CHAIR_SIDE",
-      "col": 12,
-      "row": 13
-    },
-    {
-      "uid": "f-default-56",
-      "type": "WOODEN_CHAIR_SIDE:left",
-      "col": 16,
-      "row": 11
-    },
-    {
-      "uid": "f-default-57",
-      "type": "WOODEN_CHAIR_SIDE:left",
-      "col": 16,
-      "row": 13
-    },
-    {
-      "uid": "f-default-58",
-      "type": "CUSHIONED_BENCH",
-      "col": 14,
       "row": 10
     },
     {
-      "uid": "f-default-59",
-      "type": "CUSHIONED_BENCH",
-      "col": 14,
-      "row": 13
+      "uid": "f-default-67",
+      "type": "PC_SIDE",
+      "col": 13,
+      "row": 10
     },
     {
-      "uid": "f-default-60",
+      "uid": "f-default-68",
+      "type": "PC_SIDE",
+      "col": 13,
+      "row": 12
+    },
+    {
+      "uid": "f-default-69",
+      "type": "WOODEN_CHAIR_SIDE",
+      "col": 12,
+      "row": 10
+    },
+    {
+      "uid": "f-default-70",
+      "type": "WOODEN_CHAIR_SIDE",
+      "col": 12,
+      "row": 12
+    },
+    {
+      "uid": "f-default-71",
+      "type": "PC_SIDE:left",
+      "col": 15,
+      "row": 10
+    },
+    {
+      "uid": "f-default-72",
+      "type": "PC_SIDE:left",
+      "col": 15,
+      "row": 12
+    },
+    {
+      "uid": "f-default-73",
+      "type": "WOODEN_CHAIR_SIDE:left",
+      "col": 16,
+      "row": 10
+    },
+    {
+      "uid": "f-default-74",
+      "type": "WOODEN_CHAIR_SIDE:left",
+      "col": 16,
+      "row": 12
+    },
+    {
+      "uid": "f-default-75",
+      "type": "SMALL_TABLE_FRONT",
+      "col": 17,
+      "row": 14
+    },
+    {
+      "uid": "f-default-76",
+      "type": "COFFEE",
+      "col": 17,
+      "row": 15
+    },
+    {
+      "uid": "f-default-77",
       "type": "DOUBLE_BOOKSHELF",
       "col": 21,
       "row": 7
     },
     {
-      "uid": "f-default-61",
+      "uid": "f-default-78",
       "type": "HANGING_PLANT",
       "col": 25,
       "row": 7
     },
     {
-      "uid": "f-default-62",
+      "uid": "f-default-79",
       "type": "PLANT",
       "col": 26,
       "row": 9
     },
     {
-      "uid": "f-default-63",
+      "uid": "f-default-80",
+      "type": "CACTUS",
+      "col": 20,
+      "row": 14
+    },
+    {
+      "uid": "f-default-81",
+      "type": "POT",
+      "col": 20,
+      "row": 10
+    },
+    {
+      "uid": "f-default-82",
+      "type": "BIN",
+      "col": 26,
+      "row": 16
+    },
+    {
+      "uid": "f-default-83",
       "type": "SMALL_TABLE_FRONT",
       "col": 23,
       "row": 10
     },
     {
-      "uid": "f-default-64",
+      "uid": "f-default-84",
       "type": "WOODEN_CHAIR_SIDE",
       "col": 22,
       "row": 10
     },
     {
-      "uid": "f-default-65",
+      "uid": "f-default-85",
       "type": "WOODEN_CHAIR_SIDE:left",
       "col": 25,
       "row": 10
     },
     {
-      "uid": "f-default-66",
+      "uid": "f-default-86",
       "type": "COFFEE",
       "col": 23,
       "row": 11
     },
     {
-      "uid": "f-default-67",
+      "uid": "f-default-87",
       "type": "SMALL_TABLE_FRONT",
       "col": 23,
-      "row": 13
+      "row": 12
     },
     {
-      "uid": "f-default-68",
-      "type": "WOODEN_CHAIR_SIDE",
-      "col": 22,
-      "row": 13
-    },
-    {
-      "uid": "f-default-69",
-      "type": "WOODEN_CHAIR_SIDE:left",
-      "col": 25,
-      "row": 13
-    },
-    {
-      "uid": "f-default-70",
+      "uid": "f-default-88",
       "type": "COFFEE",
-      "col": 23,
+      "col": 24,
+      "row": 13
+    },
+    {
+      "uid": "f-default-89",
+      "type": "DESK_FRONT",
+      "col": 22,
       "row": 14
     },
     {
-      "uid": "f-default-71",
-      "type": "BIN",
+      "uid": "f-default-90",
+      "type": "PC_SIDE",
+      "col": 22,
+      "row": 14
+    },
+    {
+      "uid": "f-default-91",
+      "type": "WOODEN_CHAIR_SIDE",
+      "col": 21,
+      "row": 14
+    },
+    {
+      "uid": "f-default-92",
+      "type": "PLANT_2",
       "col": 26,
-      "row": 16
+      "row": 15
     }
   ]
 }

@@ -136,10 +136,12 @@ place('DOUBLE_BOOKSHELF', 1, -1);    // Bookshelf on top wall
 place('CLOCK', 6, -1);               // Clock on top wall
 place('SMALL_PAINTING', 4, -1);      // Painting on top wall
 place('PLANT', 8, 1);                // Plant on floor near wall
-// Desk + PC + bench shifted 1 left
-place('DESK_FRONT', 2, 1);           // Desk at rows 1-2 (3 tiles wide: cols 2-4)
-place('PC_FRONT_OFF', 3, 1);         // PC on desk surface (col 3)
-place('CUSHIONED_BENCH', 3, 3);      // Bench facing PC (col 3, in front of desk)
+// Side desk arrangement for 2 agents (Dev + Infra)
+place('TABLE_FRONT', 3, 2);          // Table cols 3-5, rows 2-3
+place('PC_SIDE', 3, 2);              // PC on left side
+place('WOODEN_CHAIR_SIDE', 2, 2);    // Chair left (Dev)
+place('PC_SIDE:left', 5, 2);         // PC on right side (mirrored)
+place('WOODEN_CHAIR_SIDE:left', 6, 2); // Chair right (Infra)
 place('SMALL_TABLE_FRONT', 7, 4);    // Side table
 place('COFFEE', 7, 5);               // Coffee on side table
 place('BIN', 1, 7);                  // Bin
@@ -185,51 +187,78 @@ place('BIN', 26, 7);
 // ── Lounge (bottom-left, cols 1-9, rows 9-16) ──
 // Wall decorations: row 7 so footprintH:2 items align with middle wall at row 8
 place('HANGING_PLANT', 2, 7);        // On middle wall
-place('SMALL_PAINTING_2', 7, 7);     // On middle wall
-// Furniture
+place('BOOKSHELF', 5, 7);            // Bookshelf on middle wall (2×1)
+place('SMALL_PAINTING_2', 8, 7);     // On middle wall
+// Plants and decor
+place('PLANT_2', 1, 9);              // Corner plant
+place('PLANT', 9, 9);                // Corner plant (moved to col 9)
+place('CACTUS', 1, 12);              // Cactus left side
+place('POT', 9, 16);                 // Pot in bottom-right corner
+// Sofa lounge area (left-center)
 place('SOFA_FRONT', 3, 10);
 place('SOFA_BACK', 3, 13);
 place('SOFA_SIDE', 2, 11);
 place('SOFA_SIDE:left', 5, 11);
-place('COFFEE_TABLE', 3, 11);
-place('COFFEE', 3, 12);
-place('PLANT_2', 1, 9);
-place('PLANT', 8, 9);
-place('SMALL_TABLE_FRONT', 7, 14);
-place('COFFEE', 7, 15);
+place('COFFEE_TABLE', 3, 11);        // Between sofas
+place('COFFEE', 3, 12);              // On coffee table
+// Side table with coffee (right of sofa)
+place('SMALL_TABLE_FRONT', 7, 10);   // cols 7-8, rows 10-11
+place('COFFEE', 7, 11);              // Coffee on side table
+// Large plant fills right-center gap
+place('LARGE_PLANT', 8, 12);         // cols 8-9, rows 12-14 (2×3)
+// Reading nook (bottom-left area)
+place('CUSHIONED_CHAIR_SIDE:left', 2, 15); // Cozy chair
+place('SMALL_TABLE_FRONT', 1, 15);   // Side table (cols 1-2, rows 15-16)
+// Monitoring workstation for security-watchdog
+place('DESK_FRONT', 5, 14);          // Desk cols 5-7, rows 14-15 (3×2)
+place('PC_SIDE', 5, 14);             // PC on left side of desk
+place('WOODEN_CHAIR_SIDE', 4, 14);   // Chair facing PC (security-watchdog)
 
-// ── Conference Room (bottom-center, cols 11-18, rows 9-16) ──
+// ── Conference Room → Operations Room (bottom-center, cols 11-18, rows 9-16) ──
 // Wall decorations
 place('WHITEBOARD', 12, 7);          // On middle wall
 place('SMALL_PAINTING', 17, 7);      // On middle wall
-// Furniture
-place('PLANT', 11, 9);               // Plant on floor
-place('PLANT_2', 18, 9);             // Plant on floor
-place('TABLE_FRONT', 13, 11);        // Conference table: cols 13-15, rows 11-12
-// Chairs aligned with table sides
-place('WOODEN_CHAIR_SIDE', 12, 11);  // Left side, top of table
-place('WOODEN_CHAIR_SIDE', 12, 13);  // Left side, below table (adjacent)
-place('WOODEN_CHAIR_SIDE:left', 16, 11); // Right side, top of table
-place('WOODEN_CHAIR_SIDE:left', 16, 13); // Right side, below table (adjacent)
-// Head and foot of table
-place('CUSHIONED_BENCH', 14, 10);    // Head of table (above)
-place('CUSHIONED_BENCH', 14, 13);    // Foot of table (adjacent below)
+// Plants and decor
+place('PLANT', 11, 9);               // Corner plant
+place('PLANT_2', 18, 9);             // Corner plant
+place('CACTUS', 18, 14);             // Cactus right side
+place('BIN', 11, 16);                // Bin bottom-left
+// Side desk arrangement: 4 PC seats (3 needed: support-agent, data-custodian, change-manager)
+place('TABLE_FRONT', 13, 10);        // Table cols 13-15, rows 10-13
+place('PC_SIDE', 13, 10);            // PC left, row 10
+place('PC_SIDE', 13, 12);            // PC left, row 12
+place('WOODEN_CHAIR_SIDE', 12, 10);  // Chair left (support-agent)
+place('WOODEN_CHAIR_SIDE', 12, 12);  // Chair left (data-custodian)
+place('PC_SIDE:left', 15, 10);       // PC right, row 10
+place('PC_SIDE:left', 15, 12);       // PC right, row 12
+place('WOODEN_CHAIR_SIDE:left', 16, 10); // Chair right (change-manager)
+place('WOODEN_CHAIR_SIDE:left', 16, 12); // Chair right (spare)
+// Coffee area (bottom)
+place('SMALL_TABLE_FRONT', 17, 14);  // Small table cols 17-18, rows 14-15
+place('COFFEE', 17, 15);             // Coffee on table
 
-// ── Break Room (bottom-right, cols 20-26, rows 9-16) ──
+// ── Break Room / QA Lab (bottom-right, cols 20-26, rows 9-16) ──
 // Wall decorations
 place('DOUBLE_BOOKSHELF', 21, 7);    // On middle wall
 place('HANGING_PLANT', 25, 7);       // On middle wall
-// Furniture — tables and chairs aligned, shifted right
-place('PLANT', 26, 9);               // Plant on floor
-place('SMALL_TABLE_FRONT', 23, 10);  // Table 1: cols 23-24, rows 10-11
-place('WOODEN_CHAIR_SIDE', 22, 10);  // Chair left, aligned with table top
-place('WOODEN_CHAIR_SIDE:left', 25, 10); // Chair right, aligned
+// Plants and decor
+place('PLANT', 26, 9);               // Corner plant
+place('CACTUS', 20, 14);             // Cactus left side
+place('POT', 20, 10);                // Pot near entrance
+place('BIN', 26, 16);                // Bin bottom-right
+// Café area (top)
+place('SMALL_TABLE_FRONT', 23, 10);  // Café table: cols 23-24, rows 10-11
+place('WOODEN_CHAIR_SIDE', 22, 10);  // Chair left
+place('WOODEN_CHAIR_SIDE:left', 25, 10); // Chair right
 place('COFFEE', 23, 11);             // Coffee on table
-place('SMALL_TABLE_FRONT', 23, 13);  // Table 2: cols 23-24, rows 13-14
-place('WOODEN_CHAIR_SIDE', 22, 13);  // Chair left, aligned with table top
-place('WOODEN_CHAIR_SIDE:left', 25, 13); // Chair right, aligned
-place('COFFEE', 23, 14);             // Coffee on table
-place('BIN', 26, 16);
+// Second café table (middle)
+place('SMALL_TABLE_FRONT', 23, 12);  // cols 23-24, rows 12-13
+place('COFFEE', 24, 13);             // Coffee on table
+// QA workstation (bottom)
+place('DESK_FRONT', 22, 14);         // Desk cols 22-24, rows 14-15 (3×2)
+place('PC_SIDE', 22, 14);            // PC on left side
+place('WOODEN_CHAIR_SIDE', 21, 14);  // Chair (qa-tester)
+place('PLANT_2', 26, 15);            // Plant near QA desk
 
 // ═══════════════════════════════════════════
 
@@ -237,7 +266,7 @@ const layout = {
   version: 1,
   cols: COLS,
   rows: ROWS,
-  layoutRevision: 2,
+  layoutRevision: 3,
   tiles,
   tileColors,
   furniture,
