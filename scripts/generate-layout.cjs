@@ -146,23 +146,22 @@ place('BIN', 1, 7);                  // Bin
 
 // ── Main Workspace (top-center, cols 11-18, rows 1-7) ──
 // Wall decorations
-place('HANGING_PLANT', 14, -1);      // On top wall
-place('HANGING_PLANT', 18, -1);      // On top wall
+place('HANGING_PLANT', 12, -1);      // On top wall
+place('HANGING_PLANT', 17, -1);      // On top wall
 place('PLANT_2', 11, 1);             // Plant on floor
+place('PLANT', 18, 1);               // Plant on floor
 
-// Desk cluster 1: each desk is 3 wide, PC on surface, bench aligned with PC
-place('DESK_FRONT', 11, 1);          // Desk cols 11-13
-place('PC_FRONT_OFF', 12, 1);        // PC on desk (col 12)
-place('CUSHIONED_BENCH', 12, 3);     // Bench facing PC (col 12)
-
-place('DESK_FRONT', 14, 1);          // Desk cols 14-16
-place('PC_FRONT_OFF', 15, 1);        // PC on desk (col 15)
-place('CUSHIONED_BENCH', 15, 3);     // Bench facing PC (col 15)
-
-// Side desks (lower section)
-place('DESK_FRONT', 15, 5);          // Desk cols 15-17
-place('PC_FRONT_OFF', 16, 5);        // PC on desk
-place('CUSHIONED_BENCH', 16, 7);     // Bench facing PC
+// Side desk arrangement: table in center, PCs on sides, chairs on outside
+// Row cluster 1 (rows 2-3)
+place('TABLE_FRONT', 13, 2);         // Table cols 13-15, rows 2-3
+place('PC_SIDE', 13, 2);             // PC on left side of table
+place('PC_SIDE', 13, 4);             // PC below
+place('WOODEN_CHAIR_SIDE', 12, 2);   // Chair facing PC (left)
+place('WOODEN_CHAIR_SIDE', 12, 4);   // Chair facing PC (left)
+place('PC_SIDE:left', 15, 2);        // PC on right side of table (mirrored)
+place('PC_SIDE:left', 15, 4);        // PC below
+place('WOODEN_CHAIR_SIDE:left', 16, 2); // Chair facing PC (right)
+place('WOODEN_CHAIR_SIDE:left', 16, 4); // Chair facing PC (right)
 
 // ── Dev Area (top-right, cols 20-26, rows 1-7) ──
 // Wall decorations
@@ -170,23 +169,16 @@ place('DOUBLE_BOOKSHELF', 20, -1);   // On top wall
 place('LARGE_PAINTING', 24, -1);     // On top wall
 place('PLANT', 26, 1);               // Plant on floor
 
-// Desk row 1: two desks with PCs on surface and benches in front
-place('DESK_FRONT', 20, 1);          // Desk cols 20-22
-place('PC_FRONT_OFF', 21, 1);        // PC on desk surface
-place('CUSHIONED_BENCH', 21, 3);     // Bench facing PC
-
-place('DESK_FRONT', 23, 1);          // Desk cols 23-25
-place('PC_FRONT_OFF', 24, 1);        // PC on desk surface
-place('CUSHIONED_BENCH', 24, 3);     // Bench facing PC
-
-// Desk row 5: two more desks
-place('DESK_FRONT', 20, 5);          // Desk cols 20-22
-place('PC_FRONT_OFF', 21, 5);        // PC on desk surface
-place('CUSHIONED_BENCH', 21, 7);     // Bench facing PC
-
-place('DESK_FRONT', 23, 5);          // Desk cols 23-25
-place('PC_FRONT_OFF', 24, 5);        // PC on desk surface
-place('CUSHIONED_BENCH', 24, 7);     // Bench facing PC
+// Side desk arrangement: same pattern as workspace
+place('TABLE_FRONT', 21, 2);         // Table cols 21-23, rows 2-3
+place('PC_SIDE', 21, 2);             // PC on left side
+place('PC_SIDE', 21, 4);             // PC below
+place('WOODEN_CHAIR_SIDE', 20, 2);   // Chair left
+place('WOODEN_CHAIR_SIDE', 20, 4);   // Chair left
+place('PC_SIDE:left', 23, 2);        // PC on right side (mirrored)
+place('PC_SIDE:left', 23, 4);        // PC below
+place('WOODEN_CHAIR_SIDE:left', 24, 2); // Chair right
+place('WOODEN_CHAIR_SIDE:left', 24, 4); // Chair right
 
 place('BIN', 26, 7);
 
@@ -213,13 +205,15 @@ place('SMALL_PAINTING', 17, 7);      // On middle wall
 // Furniture
 place('PLANT', 11, 9);               // Plant on floor
 place('PLANT_2', 18, 9);             // Plant on floor
-place('TABLE_FRONT', 13, 11);        // Conference table
-place('WOODEN_CHAIR_SIDE', 12, 12);
-place('WOODEN_CHAIR_SIDE', 12, 14);
-place('WOODEN_CHAIR_SIDE:left', 16, 12);
-place('WOODEN_CHAIR_SIDE:left', 16, 14);
-place('CUSHIONED_BENCH', 14, 10);    // Head of table
-place('CUSHIONED_BENCH', 14, 14);    // Foot of table
+place('TABLE_FRONT', 13, 11);        // Conference table: cols 13-15, rows 11-12
+// Chairs aligned with table sides
+place('WOODEN_CHAIR_SIDE', 12, 11);  // Left side, top of table
+place('WOODEN_CHAIR_SIDE', 12, 13);  // Left side, below table (adjacent)
+place('WOODEN_CHAIR_SIDE:left', 16, 11); // Right side, top of table
+place('WOODEN_CHAIR_SIDE:left', 16, 13); // Right side, below table (adjacent)
+// Head and foot of table
+place('CUSHIONED_BENCH', 14, 10);    // Head of table (above)
+place('CUSHIONED_BENCH', 14, 13);    // Foot of table (adjacent below)
 
 // ── Break Room (bottom-right, cols 20-26, rows 9-16) ──
 // Wall decorations
