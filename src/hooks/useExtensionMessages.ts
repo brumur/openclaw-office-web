@@ -142,10 +142,11 @@ export function useExtensionMessages(
         const id = msg.id as number;
         const name = (msg.name ?? msg.folderName) as string | undefined;
         const sessionKey = msg.sessionKey as string | undefined;
+        const zone = msg.zone as import('../agentConfig.js').Zone | null | undefined;
         if (msg.resident) residentAgents.current.add(id);
         setAgents((prev) => (prev.includes(id) ? prev : [...prev, id]));
         setSelectedAgent(id);
-        os.addAgent(id, undefined, undefined, undefined, undefined, name, sessionKey);
+        os.addAgent(id, undefined, undefined, undefined, undefined, name, sessionKey, zone ?? undefined);
         saveAgentSeats(os);
       } else if (msg.type === 'agentClosed') {
         const id = msg.id as number;

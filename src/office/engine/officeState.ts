@@ -22,6 +22,7 @@ import {
   layoutToTileMap,
 } from '../layout/layoutSerializer.js';
 import { findPath, getWalkableTiles, isWalkable } from '../layout/tileMap.js';
+import type { Zone } from '../../agentConfig.js';
 import type {
   Character,
   FurnitureInstance,
@@ -177,7 +178,7 @@ export class OfficeState {
     return result;
   }
 
-  private findFreeSeat(): string | null {
+  private findFreeSeat(zone?: Zone): string | null {
     // Build set of tiles occupied by electronics (PCs, monitors, etc.)
     const electronicsTiles = new Set<string>();
     for (const item of this.layout.furniture) {
@@ -190,9 +191,20 @@ export class OfficeState {
       }
     }
 
+    const inZone = (seat: Seat): boolean =>
+      !zone ||
+      (seat.seatCol >= zone.colMin &&
+        seat.seatCol <= zone.colMax &&
+        seat.seatRow >= zone.rowMin &&
+        seat.seatRow <= zone.rowMax);
+
     // Collect free seats, split into those facing electronics and the rest
+    // First try within the requested zone; if empty fall back to all seats.
     const pcSeats: string[] = [];
     const otherSeats: string[] = [];
+    const pcSeatsAny: string[] = [];
+    const otherSeatsAny: string[] = [];
+
     for (const [uid, seat] of this.seats) {
       if (seat.assigned) continue;
 
@@ -226,12 +238,18 @@ export class OfficeState {
           }
         }
       }
-      (facesPC ? pcSeats : otherSeats).push(uid);
+
+      if (inZone(seat)) {
+        (facesPC ? pcSeats : otherSeats).push(uid);
+      }
+      (facesPC ? pcSeatsAny : otherSeatsAny).push(uid);
     }
 
-    // Pick randomly: prefer PC seats, then any seat
+    // Pick randomly: prefer zone PC seats → zone other → fallback any PC → fallback any
     if (pcSeats.length > 0) return pcSeats[Math.floor(Math.random() * pcSeats.length)];
     if (otherSeats.length > 0) return otherSeats[Math.floor(Math.random() * otherSeats.length)];
+    if (pcSeatsAny.length > 0) return pcSeatsAny[Math.floor(Math.random() * pcSeatsAny.length)];
+    if (otherSeatsAny.length > 0) return otherSeatsAny[Math.floor(Math.random() * otherSeatsAny.length)];
     return null;
   }
 
@@ -270,6 +288,7 @@ export class OfficeState {
     skipSpawnEffect?: boolean,
     folderName?: string,
     sessionKey?: string,
+    zone?: Zone,
   ): void {
     if (this.characters.has(id)) return;
 
@@ -309,7 +328,7 @@ export class OfficeState {
       }
     }
     if (!seatId) {
-      seatId = this.findFreeSeat();
+      seatId = this.findFreeSeat(zone);
     }
 
     let ch: Character;
@@ -375,7 +394,7 @@ export class OfficeState {
    * Add offline placeholder characters for configured agents not yet connected.
    * These appear greyed-out in the office, seated at desks.
    */
-  addOfflinePlaceholders(configs: Array<{ folderName: string }>): void {
+  addOfflinePlaceholders(configs: Array<{ folderName: string; zone?: Zone }>): void {
     // Collect folderNames already present (online agents)
     const onlineFolders = new Set<string>();
     for (const ch of this.characters.values()) {
@@ -389,7 +408,7 @@ export class OfficeState {
 
       const id = this.nextOfflineId--;
       const pick = this.pickDiversePalette();
-      const seatId = this.findFreeSeat();
+      const seatId = this.findFreeSeat(cfg.zone);
 
       let ch: Character;
       if (seatId) {

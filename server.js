@@ -134,17 +134,27 @@ let bridgeStatus = 'connecting';
 // `alwaysAnnounce: true` means the agent is announced as online immediately
 // (e.g. Jarvis is always running). Others are only announced when their first
 // OpenClaw event arrives, and can go offline (showing as placeholder in the office).
+// Zone boundaries (col/row ranges for each room in the 28×18 grid)
+const ZONE = {
+  managerOffice:  { colMin: 1,  colMax: 9,  rowMin: 1, rowMax: 7  },
+  mainWorkspace:  { colMin: 11, colMax: 18, rowMin: 1, rowMax: 7  },
+  devArea:        { colMin: 20, colMax: 26, rowMin: 1, rowMax: 7  },
+  lounge:         { colMin: 1,  colMax: 9,  rowMin: 9, rowMax: 16 },
+  conferenceRoom: { colMin: 11, colMax: 18, rowMin: 9, rowMax: 16 },
+  breakRoom:      { colMin: 20, colMax: 26, rowMin: 9, rowMax: 16 },
+};
+
 const RESIDENTS = [
-  { id: 1,  name: 'Jarvis',            sessionKey: 'agent:main:main',              alwaysAnnounce: true },
-  { id: 3,  name: 'Dev',               sessionKey: 'agent:dev:dev',                alwaysAnnounce: true },
-  { id: 4,  name: 'Infra',             sessionKey: 'agent:infra:infra',            alwaysAnnounce: true },
-  { id: 5,  name: 'support-agent',     sessionKey: 'agent:main:support-agent',     alwaysAnnounce: true },
-  { id: 6,  name: 'qa-tester',         sessionKey: 'agent:main:qa-tester',         alwaysAnnounce: true },
-  { id: 7,  name: 'data-custodian',    sessionKey: 'agent:main:data-custodian',    alwaysAnnounce: true },
-  { id: 8,  name: 'service-ops',       sessionKey: 'agent:main:service-ops',       alwaysAnnounce: true },
-  { id: 9,  name: 'analytics',         sessionKey: 'agent:main:analytics',         alwaysAnnounce: true },
-  { id: 10, name: 'security-watchdog', sessionKey: 'agent:main:security-watchdog', alwaysAnnounce: true },
-  { id: 11, name: 'change-manager',    sessionKey: 'agent:main:change-manager',    alwaysAnnounce: true },
+  { id: 1,  name: 'Jarvis',            sessionKey: 'agent:main:main',              alwaysAnnounce: true, zone: ZONE.mainWorkspace  },
+  { id: 3,  name: 'Dev',               sessionKey: 'agent:dev:dev',                alwaysAnnounce: true, zone: ZONE.managerOffice  },
+  { id: 4,  name: 'Infra',             sessionKey: 'agent:infra:infra',            alwaysAnnounce: true, zone: ZONE.managerOffice  },
+  { id: 5,  name: 'support-agent',     sessionKey: 'agent:main:support-agent',     alwaysAnnounce: true, zone: ZONE.conferenceRoom },
+  { id: 6,  name: 'qa-tester',         sessionKey: 'agent:main:qa-tester',         alwaysAnnounce: true, zone: ZONE.breakRoom      },
+  { id: 7,  name: 'data-custodian',    sessionKey: 'agent:main:data-custodian',    alwaysAnnounce: true, zone: ZONE.conferenceRoom },
+  { id: 8,  name: 'service-ops',       sessionKey: 'agent:main:service-ops',       alwaysAnnounce: true, zone: ZONE.mainWorkspace  },
+  { id: 9,  name: 'analytics',         sessionKey: 'agent:main:analytics',         alwaysAnnounce: true, zone: ZONE.devArea        },
+  { id: 10, name: 'security-watchdog', sessionKey: 'agent:main:security-watchdog', alwaysAnnounce: true, zone: ZONE.lounge         },
+  { id: 11, name: 'change-manager',    sessionKey: 'agent:main:change-manager',    alwaysAnnounce: true, zone: ZONE.conferenceRoom },
 ];
 
 let nextAgentId = Math.max(...RESIDENTS.map(r => r.id)) + 1;
@@ -251,7 +261,7 @@ function sendResidents(target = null) {
   const payloads = alwaysOn.flatMap((r) => {
     announcedResidents.add(r.id);
     return [
-      { type: 'agentCreated', id: r.id, name: r.name, sessionKey: r.sessionKey, resident: true, folderName: r.name.toLowerCase() },
+      { type: 'agentCreated', id: r.id, name: r.name, sessionKey: r.sessionKey, resident: true, folderName: r.name.toLowerCase(), zone: r.zone ?? null },
       { type: 'agentStatus', id: r.id, status: 'idle' },
     ];
   });
@@ -429,7 +439,7 @@ function connectToOpenClaw() {
             // If this resident wasn't announced yet (non-alwaysAnnounce), announce now
             if (!announcedResidents.has(knownResident.id)) {
               announcedResidents.add(knownResident.id);
-              broadcast({ type: 'agentCreated', id: knownResident.id, name: knownResident.name, sessionKey: knownResident.sessionKey, resident: false, folderName: knownResident.name.toLowerCase() });
+              broadcast({ type: 'agentCreated', id: knownResident.id, name: knownResident.name, sessionKey: knownResident.sessionKey, resident: false, folderName: knownResident.name.toLowerCase(), zone: knownResident.zone ?? null });
               console.log(`[Session] Announcing resident "${knownResident.name}" (discovered via OpenClaw event)`);
             }
           } else {
