@@ -219,16 +219,16 @@ place('CUSHIONED_BENCH', 14, 13);    // Foot of table (adjacent below)
 // Wall decorations
 place('DOUBLE_BOOKSHELF', 21, 7);    // On middle wall
 place('HANGING_PLANT', 25, 7);       // On middle wall
-// Furniture — tables and chairs moved up and aligned
+// Furniture — tables and chairs aligned, shifted right
 place('PLANT', 26, 9);               // Plant on floor
-place('SMALL_TABLE_FRONT', 22, 10);  // Table 1: rows 10-11
-place('WOODEN_CHAIR_SIDE', 21, 11);  // Chair left, aligned with table bottom
-place('WOODEN_CHAIR_SIDE:left', 24, 11); // Chair right, aligned
-place('COFFEE', 22, 11);             // Coffee on table
-place('SMALL_TABLE_FRONT', 22, 13);  // Table 2: rows 13-14
-place('WOODEN_CHAIR_SIDE', 21, 14);  // Chair left, aligned with table bottom
-place('WOODEN_CHAIR_SIDE:left', 24, 14); // Chair right, aligned
-place('COFFEE', 22, 14);             // Coffee on table
+place('SMALL_TABLE_FRONT', 23, 10);  // Table 1: cols 23-24, rows 10-11
+place('WOODEN_CHAIR_SIDE', 22, 10);  // Chair left, aligned with table top
+place('WOODEN_CHAIR_SIDE:left', 25, 10); // Chair right, aligned
+place('COFFEE', 23, 11);             // Coffee on table
+place('SMALL_TABLE_FRONT', 23, 13);  // Table 2: cols 23-24, rows 13-14
+place('WOODEN_CHAIR_SIDE', 22, 13);  // Chair left, aligned with table top
+place('WOODEN_CHAIR_SIDE:left', 25, 13); // Chair right, aligned
+place('COFFEE', 23, 14);             // Coffee on table
 place('BIN', 26, 16);
 
 // ═══════════════════════════════════════════

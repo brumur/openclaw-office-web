@@ -3911,49 +3911,49 @@
     {
       "uid": "f-default-63",
       "type": "SMALL_TABLE_FRONT",
-      "col": 22,
+      "col": 23,
       "row": 10
     },
     {
       "uid": "f-default-64",
       "type": "WOODEN_CHAIR_SIDE",
-      "col": 21,
-      "row": 11
+      "col": 22,
+      "row": 10
     },
     {
       "uid": "f-default-65",
       "type": "WOODEN_CHAIR_SIDE:left",
-      "col": 24,
-      "row": 11
+      "col": 25,
+      "row": 10
     },
     {
       "uid": "f-default-66",
       "type": "COFFEE",
-      "col": 22,
+      "col": 23,
       "row": 11
     },
     {
       "uid": "f-default-67",
       "type": "SMALL_TABLE_FRONT",
-      "col": 22,
+      "col": 23,
       "row": 13
     },
     {
       "uid": "f-default-68",
       "type": "WOODEN_CHAIR_SIDE",
-      "col": 21,
-      "row": 14
+      "col": 22,
+      "row": 13
     },
     {
       "uid": "f-default-69",
       "type": "WOODEN_CHAIR_SIDE:left",
-      "col": 24,
-      "row": 14
+      "col": 25,
+      "row": 13
     },
     {
       "uid": "f-default-70",
       "type": "COFFEE",
-      "col": 22,
+      "col": 23,
       "row": 14
     },
     {
