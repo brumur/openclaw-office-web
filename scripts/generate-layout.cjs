@@ -170,17 +170,25 @@ place('DOUBLE_BOOKSHELF', 20, -1);   // On top wall
 place('LARGE_PAINTING', 24, -1);     // On top wall
 place('PLANT', 26, 1);               // Plant on floor
 
-// Side desk pairs with PCs
-place('TABLE_FRONT', 22, 1);         // Large table against wall
-place('PC_SIDE', 22, 3);             // PC left side
-place('WOODEN_CHAIR_SIDE', 21, 3);   // Chair facing PC
-place('PC_SIDE', 22, 5);             // PC left side
-place('WOODEN_CHAIR_SIDE', 21, 5);   // Chair facing PC
-place('PC_SIDE:left', 24, 3);        // PC right side (mirrored)
-place('WOODEN_CHAIR_SIDE:left', 25, 3); // Chair facing PC
-place('PC_SIDE:left', 24, 5);        // PC right side
-place('WOODEN_CHAIR_SIDE:left', 25, 5); // Chair facing PC
-place('BIN', 20, 7);
+// Desk row 1: two desks with PCs on surface and benches in front
+place('DESK_FRONT', 20, 1);          // Desk cols 20-22
+place('PC_FRONT_OFF', 21, 1);        // PC on desk surface
+place('CUSHIONED_BENCH', 21, 3);     // Bench facing PC
+
+place('DESK_FRONT', 23, 1);          // Desk cols 23-25
+place('PC_FRONT_OFF', 24, 1);        // PC on desk surface
+place('CUSHIONED_BENCH', 24, 3);     // Bench facing PC
+
+// Desk row 5: two more desks
+place('DESK_FRONT', 20, 5);          // Desk cols 20-22
+place('PC_FRONT_OFF', 21, 5);        // PC on desk surface
+place('CUSHIONED_BENCH', 21, 7);     // Bench facing PC
+
+place('DESK_FRONT', 23, 5);          // Desk cols 23-25
+place('PC_FRONT_OFF', 24, 5);        // PC on desk surface
+place('CUSHIONED_BENCH', 24, 7);     // Bench facing PC
+
+place('BIN', 26, 7);
 
 // ── Lounge (bottom-left, cols 1-9, rows 9-16) ──
 // Wall decorations: row 7 so footprintH:2 items align with middle wall at row 8
