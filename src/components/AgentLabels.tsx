@@ -1,9 +1,13 @@
 import { Fragment, useEffect, useState } from 'react';
 
 import { agentColor } from '../agentColors.js';
+import { CONFIGURED_AGENTS } from '../agentConfig.js';
 import type { SubagentCharacter } from '../hooks/useExtensionMessages.js';
 import type { OfficeState } from '../office/engine/officeState.js';
 import { CharacterState, TILE_SIZE } from '../office/types.js';
+
+/** Set of known agent folderNames (lowercase) — these don't show sessionKey */
+const KNOWN_FOLDERS = new Set(CONFIGURED_AGENTS.map((a) => a.folderName.toLowerCase()));
 
 const CHAR_W = 16; // sprite width in game pixels
 const CHAR_H = 32; // sprite height in game pixels
@@ -89,7 +93,8 @@ export function AgentLabels({
         }
 
         const labelText = subLabelMap.get(id) || ch.folderName || `Agent #${id}`;
-        const sessionKeyText = !ch.isSubagent ? ch.sessionKey : undefined;
+        const isKnownAgent = KNOWN_FOLDERS.has((ch.folderName ?? '').toLowerCase());
+        const sessionKeyText = !ch.isSubagent && !isKnownAgent ? ch.sessionKey : undefined;
 
         // Selected chat agent ring
         // ch.y is the bottom-center anchor (same as renderer: drawY = offsetY + ch.y*zoom - height)
