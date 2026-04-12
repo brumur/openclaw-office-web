@@ -130,61 +130,63 @@ function place(type, col, row, color) {
   furniture.push(item);
 }
 
-// ── Manager's Office (top-left) ──
-place('DESK_FRONT', 3, 1);           // Desk against top wall
-place('PC_FRONT_OFF', 4, 1);         // PC on desk
-place('CUSHIONED_BENCH', 3, 3);      // Chair
-place('DOUBLE_BOOKSHELF', 1, 0);     // Bookshelf left wall
-place('PLANT', 8, 0);                // Plant corner
-place('CLOCK', 6, 0);                // Clock on wall
-place('SMALL_PAINTING', 4, 0);       // Painting on top wall (not overlapping bookshelf)
-place('COFFEE', 7, 5);               // Coffee on side table
+// ── Manager's Office (top-left, cols 1-9, rows 1-7) ──
+// Wall decorations: row -1 so footprintH:2 items align with wall at row 0
+place('DOUBLE_BOOKSHELF', 1, -1);    // Bookshelf on top wall
+place('CLOCK', 6, -1);               // Clock on top wall
+place('SMALL_PAINTING', 4, -1);      // Painting on top wall
+place('PLANT', 8, 1);                // Plant on floor near wall
+// Desk + PC + bench (PC on desk surface, bench aligned with PC)
+place('DESK_FRONT', 3, 1);           // Desk at rows 1-2 (3 tiles wide: cols 3-5)
+place('PC_FRONT_OFF', 4, 1);         // PC on desk surface (col 4)
+place('CUSHIONED_BENCH', 4, 3);      // Bench facing PC (col 4, in front of desk)
 place('SMALL_TABLE_FRONT', 7, 4);    // Side table
+place('COFFEE', 7, 5);               // Coffee on side table
 place('BIN', 1, 7);                  // Bin
 
-// ── Main Workspace (top-center) ──
-// Desk cluster 1 (left side)
-place('DESK_FRONT', 11, 1);
-place('PC_FRONT_OFF', 12, 1);
-place('CUSHIONED_BENCH', 11, 3);
-place('DESK_FRONT', 13, 1);
-place('PC_FRONT_OFF', 14, 1);
-place('CUSHIONED_BENCH', 13, 3);
+// ── Main Workspace (top-center, cols 11-18, rows 1-7) ──
+// Wall decorations
+place('HANGING_PLANT', 14, -1);      // On top wall
+place('HANGING_PLANT', 18, -1);      // On top wall
+place('PLANT_2', 11, 1);             // Plant on floor
 
-// Desk cluster 2 (right side)
-place('DESK_FRONT', 15, 1);
-place('PC_FRONT_OFF', 16, 1);
-place('CUSHIONED_BENCH', 15, 3);
-place('DESK_FRONT', 17, 1);
-place('PC_FRONT_OFF', 18, 1);
-place('CUSHIONED_BENCH', 17, 3);
+// Desk cluster 1: each desk is 3 wide, PC on surface, bench aligned with PC
+place('DESK_FRONT', 11, 1);          // Desk cols 11-13
+place('PC_FRONT_OFF', 12, 1);        // PC on desk (col 12)
+place('CUSHIONED_BENCH', 12, 3);     // Bench facing PC (col 12)
 
-// Side desks
-place('SMALL_TABLE_SIDE', 11, 5);
-place('SMALL_TABLE_SIDE', 11, 7);
-place('WOODEN_CHAIR_SIDE', 12, 5);
-place('WOODEN_CHAIR_SIDE', 12, 7);
+place('DESK_FRONT', 14, 1);          // Desk cols 14-16
+place('PC_FRONT_OFF', 15, 1);        // PC on desk (col 15)
+place('CUSHIONED_BENCH', 15, 3);     // Bench facing PC (col 15)
 
-place('HANGING_PLANT', 14, 0);
-place('HANGING_PLANT', 18, 0);
-place('PLANT_2', 11, 0);
+// Side desks (lower section)
+place('DESK_FRONT', 15, 5);          // Desk cols 15-17
+place('PC_FRONT_OFF', 16, 5);        // PC on desk
+place('CUSHIONED_BENCH', 16, 7);     // Bench facing PC
 
-// ── Dev Area (top-right) ──
-place('TABLE_FRONT', 22, 1);
-place('PC_SIDE', 22, 3);
-place('WOODEN_CHAIR_SIDE', 21, 3);
-place('PC_SIDE', 22, 5);
-place('WOODEN_CHAIR_SIDE', 21, 5);
-place('PC_SIDE:left', 24, 3);
-place('WOODEN_CHAIR_SIDE:left', 25, 3);
-place('PC_SIDE:left', 24, 5);
-place('WOODEN_CHAIR_SIDE:left', 25, 5);
-place('DOUBLE_BOOKSHELF', 20, 0);
-place('PLANT', 26, 0);
-place('LARGE_PAINTING', 24, 0);
+// ── Dev Area (top-right, cols 20-26, rows 1-7) ──
+// Wall decorations
+place('DOUBLE_BOOKSHELF', 20, -1);   // On top wall
+place('LARGE_PAINTING', 24, -1);     // On top wall
+place('PLANT', 26, 1);               // Plant on floor
+
+// Side desk pairs with PCs
+place('TABLE_FRONT', 22, 1);         // Large table against wall
+place('PC_SIDE', 22, 3);             // PC left side
+place('WOODEN_CHAIR_SIDE', 21, 3);   // Chair facing PC
+place('PC_SIDE', 22, 5);             // PC left side
+place('WOODEN_CHAIR_SIDE', 21, 5);   // Chair facing PC
+place('PC_SIDE:left', 24, 3);        // PC right side (mirrored)
+place('WOODEN_CHAIR_SIDE:left', 25, 3); // Chair facing PC
+place('PC_SIDE:left', 24, 5);        // PC right side
+place('WOODEN_CHAIR_SIDE:left', 25, 5); // Chair facing PC
 place('BIN', 20, 7);
 
-// ── Lounge (bottom-left) ──
+// ── Lounge (bottom-left, cols 1-9, rows 9-16) ──
+// Wall decorations: row 7 so footprintH:2 items align with middle wall at row 8
+place('HANGING_PLANT', 2, 7);        // On middle wall
+place('SMALL_PAINTING_2', 7, 7);     // On middle wall
+// Furniture
 place('SOFA_FRONT', 3, 10);
 place('SOFA_BACK', 3, 13);
 place('SOFA_SIDE', 2, 11);
@@ -193,34 +195,36 @@ place('COFFEE_TABLE', 3, 11);
 place('COFFEE', 3, 12);
 place('PLANT_2', 1, 9);
 place('PLANT', 8, 9);
-place('HANGING_PLANT', 2, 8);        // On wall, away from doorway at col 5
-place('SMALL_PAINTING_2', 7, 8);     // On wall, away from doorway at col 5
 place('SMALL_TABLE_FRONT', 7, 14);
 place('COFFEE', 7, 15);
 
-// ── Conference Room (bottom-center) ──
-place('TABLE_FRONT', 13, 11);
+// ── Conference Room (bottom-center, cols 11-18, rows 9-16) ──
+// Wall decorations
+place('WHITEBOARD', 12, 7);          // On middle wall
+place('SMALL_PAINTING', 17, 7);      // On middle wall
+// Furniture
+place('PLANT', 11, 9);               // Plant on floor
+place('PLANT_2', 18, 9);             // Plant on floor
+place('TABLE_FRONT', 13, 11);        // Conference table
 place('WOODEN_CHAIR_SIDE', 12, 12);
 place('WOODEN_CHAIR_SIDE', 12, 14);
 place('WOODEN_CHAIR_SIDE:left', 16, 12);
 place('WOODEN_CHAIR_SIDE:left', 16, 14);
-place('CUSHIONED_BENCH', 13, 10);
-place('CUSHIONED_BENCH', 15, 10);
-place('WHITEBOARD', 12, 8);          // On wall, away from doorways at 14-15
-place('PLANT', 11, 9);               // Inside room, not on wall
-place('PLANT_2', 18, 9);             // Inside room, not on wall
-place('SMALL_PAINTING', 17, 8);      // On wall, away from doorways
+place('CUSHIONED_BENCH', 14, 10);    // Head of table
+place('CUSHIONED_BENCH', 14, 14);    // Foot of table
 
-// ── Break Room (bottom-right) ──
+// ── Break Room (bottom-right, cols 20-26, rows 9-16) ──
+// Wall decorations
+place('DOUBLE_BOOKSHELF', 21, 7);    // On middle wall
+place('HANGING_PLANT', 25, 7);       // On middle wall
+// Furniture
+place('PLANT', 26, 9);               // Plant on floor
 place('SMALL_TABLE_FRONT', 22, 12);
 place('WOODEN_CHAIR_SIDE', 21, 13);
 place('WOODEN_CHAIR_SIDE:left', 24, 13);
 place('SMALL_TABLE_FRONT', 22, 14);
 place('WOODEN_CHAIR_SIDE', 21, 15);
 place('WOODEN_CHAIR_SIDE:left', 24, 15);
-place('DOUBLE_BOOKSHELF', 21, 8);    // On wall, not overlapping with hanging plant
-place('PLANT', 26, 9);               // Inside room, not on wall
-place('HANGING_PLANT', 25, 8);       // On wall, separate from bookshelf
 place('BIN', 26, 16);
 place('COFFEE', 22, 13);
 place('COFFEE', 22, 15);
