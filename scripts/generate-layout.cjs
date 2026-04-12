@@ -95,8 +95,8 @@ fillRect(9, 1, 16, 9, F9, WARM_COLOR);
 // ── Bottom-center: Conference Room (cols 11-18, rows 9-16) — blue tile ──
 fillRect(9, 11, 16, 18, F1, BLUE_COLOR);
 
-// ── Bottom-right: Break Room (cols 20-26, rows 9-16) — gray stone ──
-fillRect(9, 20, 16, 26, F9, GRAY_COLOR);
+// ── Bottom-right: Break Room (cols 20-26, rows 9-16) — tile floor ──
+fillRect(9, 20, 16, 26, F2, GRAY_COLOR);
 
 // ── DOORWAYS (floor tiles in wall positions) ──
 
@@ -104,7 +104,7 @@ fillRect(9, 20, 16, 26, F9, GRAY_COLOR);
 setTile(8, 5, F7, WOOD_COLOR);     // Manager → Lounge
 setTile(8, 14, F1, BLUE_COLOR);    // Workspace → Conference
 setTile(8, 15, F1, BLUE_COLOR);    // Workspace → Conference (double door)
-setTile(8, 23, F9, GRAY_COLOR);    // Dev → Break room
+setTile(8, 23, F2, GRAY_COLOR);    // Dev → Break room
 
 // Left ↔ Center doorways (in col 10)
 setTile(4, 10, F7, WOOD_COLOR);    // Manager → Workspace
@@ -112,7 +112,7 @@ setTile(12, 10, F9, WARM_COLOR);   // Lounge → Conference
 
 // Center ↔ Right doorways (in col 19)
 setTile(4, 19, F7, WOOD_COLOR);    // Workspace → Dev
-setTile(12, 19, F9, GRAY_COLOR);   // Conference → Break room
+setTile(12, 19, F2, GRAY_COLOR);   // Conference → Break room
 
 // ═══════════════════════════════════════════
 // FURNITURE
@@ -137,7 +137,7 @@ place('CUSHIONED_BENCH', 3, 3);      // Chair
 place('DOUBLE_BOOKSHELF', 1, 0);     // Bookshelf left wall
 place('PLANT', 8, 0);                // Plant corner
 place('CLOCK', 6, 0);                // Clock on wall
-place('SMALL_PAINTING', 1, 0);       // Painting (will overlap bookshelf... let me adjust)
+place('SMALL_PAINTING', 4, 0);       // Painting on top wall (not overlapping bookshelf)
 place('COFFEE', 7, 5);               // Coffee on side table
 place('SMALL_TABLE_FRONT', 7, 4);    // Side table
 place('BIN', 1, 7);                  // Bin
@@ -193,8 +193,8 @@ place('COFFEE_TABLE', 3, 11);
 place('COFFEE', 3, 12);
 place('PLANT_2', 1, 9);
 place('PLANT', 8, 9);
-place('HANGING_PLANT', 1, 8);
-place('SMALL_PAINTING_2', 5, 8);
+place('HANGING_PLANT', 2, 8);        // On wall, away from doorway at col 5
+place('SMALL_PAINTING_2', 7, 8);     // On wall, away from doorway at col 5
 place('SMALL_TABLE_FRONT', 7, 14);
 place('COFFEE', 7, 15);
 
@@ -206,10 +206,10 @@ place('WOODEN_CHAIR_SIDE:left', 16, 12);
 place('WOODEN_CHAIR_SIDE:left', 16, 14);
 place('CUSHIONED_BENCH', 13, 10);
 place('CUSHIONED_BENCH', 15, 10);
-place('WHITEBOARD', 14, 8);
-place('PLANT', 11, 8);
-place('PLANT_2', 18, 8);
-place('SMALL_PAINTING', 16, 8);
+place('WHITEBOARD', 12, 8);          // On wall, away from doorways at 14-15
+place('PLANT', 11, 9);               // Inside room, not on wall
+place('PLANT_2', 18, 9);             // Inside room, not on wall
+place('SMALL_PAINTING', 17, 8);      // On wall, away from doorways
 
 // ── Break Room (bottom-right) ──
 place('SMALL_TABLE_FRONT', 22, 12);
@@ -218,9 +218,9 @@ place('WOODEN_CHAIR_SIDE:left', 24, 13);
 place('SMALL_TABLE_FRONT', 22, 14);
 place('WOODEN_CHAIR_SIDE', 21, 15);
 place('WOODEN_CHAIR_SIDE:left', 24, 15);
-place('DOUBLE_BOOKSHELF', 20, 8);
-place('PLANT', 26, 8);
-place('HANGING_PLANT', 20, 8);
+place('DOUBLE_BOOKSHELF', 21, 8);    // On wall, not overlapping with hanging plant
+place('PLANT', 26, 9);               // Inside room, not on wall
+place('HANGING_PLANT', 25, 8);       // On wall, separate from bookshelf
 place('BIN', 26, 16);
 place('COFFEE', 22, 13);
 place('COFFEE', 22, 15);
