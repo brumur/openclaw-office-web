@@ -3695,55 +3695,55 @@
     {
       "uid": "f-default-27",
       "type": "TABLE_FRONT",
-      "col": 23,
+      "col": 22,
       "row": 2
     },
     {
       "uid": "f-default-28",
       "type": "PC_SIDE",
-      "col": 23,
+      "col": 22,
       "row": 2
     },
     {
       "uid": "f-default-29",
       "type": "PC_SIDE",
-      "col": 23,
+      "col": 22,
       "row": 4
     },
     {
       "uid": "f-default-30",
       "type": "WOODEN_CHAIR_SIDE",
-      "col": 22,
+      "col": 21,
       "row": 2
     },
     {
       "uid": "f-default-31",
       "type": "WOODEN_CHAIR_SIDE",
-      "col": 22,
+      "col": 21,
       "row": 4
     },
     {
       "uid": "f-default-32",
       "type": "PC_SIDE:left",
-      "col": 25,
+      "col": 24,
       "row": 2
     },
     {
       "uid": "f-default-33",
       "type": "PC_SIDE:left",
-      "col": 25,
+      "col": 24,
       "row": 4
     },
     {
       "uid": "f-default-34",
       "type": "WOODEN_CHAIR_SIDE:left",
-      "col": 26,
+      "col": 25,
       "row": 2
     },
     {
       "uid": "f-default-35",
       "type": "WOODEN_CHAIR_SIDE:left",
-      "col": 26,
+      "col": 25,
       "row": 4
     },
     {
