@@ -12,7 +12,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
-const OPENCLAW_WS_URL = (process.env.OPENCLAW_URL ?? 'http://185.205.244.235:18789').replace(/^http/, 'ws');
+const OPENCLAW_WS_URL = (process.env.OPENCLAW_URL ?? 'http://185.205.244.235:18789').replace(/^http/, 'ws') + '/ws';
 const OPENCLAW_TOKEN  = process.env.OPENCLAW_TOKEN ?? 'admin-token-123';
 const IDENTITY_PATH   = process.env.OPENCLAW_IDENTITY_PATH ?? path.join(os.homedir(), '.pixel-office-identity.json');
 const SCOPES          = ['operator.admin', 'operator.read', 'operator.write', 'operator.approvals'];
@@ -388,10 +388,13 @@ function connectToOpenClaw() {
       openclawSend({
         type: 'req', id: crypto.randomUUID(), method: 'connect',
         params: {
-          minProtocol: 3, maxProtocol: 3,
+          minProtocol: 4,
+          maxProtocol: 4,
           client: { id: 'cli', version: '1.0.0', platform: 'node', mode: 'cli' },
-          caps: ['tool-events'], commands: [],
-          role: 'operator', scopes: SCOPES,
+          caps: [],
+          commands: [],
+          role: 'operator',
+          scopes: SCOPES,
           auth: { token: OPENCLAW_TOKEN },
           device: {
             id: identity.deviceId,
@@ -409,6 +412,14 @@ function connectToOpenClaw() {
       sendBridgeStatus('connected');
       const v = msg.payload.server?.version;
       console.log(`[OpenClaw] Connected! Server ${v}, protocol ${msg.payload.protocol}`);
+
+      // Subscribe to session events
+      openclawSend({
+        type: 'req',
+        id: crypto.randomUUID(),
+        method: 'sessions.messages.subscribe',
+        params: { sessionKey: 'main' }
+      });
 
       // Re-announce residents in case clients connected before the bridge was ready.
       sendResidents();
